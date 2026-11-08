@@ -1,0 +1,9 @@
+node_modules/
+doc.docx
+doc.pdf
+prd.docx
+prd.pdf
+pages-*.json
+targets-*.json
+p1-*.json
+tangkap-layar/berkas-uji/

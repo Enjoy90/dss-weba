@@ -1,0 +1,9 @@
+{
+  "name": "alat-dokumen-spk",
+  "private": true,
+  "description": "Perangkat pembuat docx panduan dan PRD, serta pengambil tangkapan layar. Terpisah dari aplikasi.",
+  "dependencies": {
+    "docx": "^9.15.2",
+    "playwright-core": "^1.49.1"
+  }
+}
