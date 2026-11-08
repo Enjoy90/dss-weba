@@ -3,9 +3,9 @@
 | Informasi | Isi |
 |---|---|
 | Aplikasi | SPK Prioritas Produksi (studi kasus PT Weba International) |
-| Versi dokumen | 1.3 |
-| Tanggal | 6 November 2026 |
-| Cakupan | Fase 0 sampai Fase 5: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel |
+| Versi dokumen | 1.4 |
+| Tanggal | 8 November 2026 |
+| Cakupan | Fase 0 sampai Fase 6: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi |
 | Alamat lokal | http://localhost:8001/admin |
 
 ## 1. Tentang Dokumen Ini
@@ -23,7 +23,7 @@ Setiap pengujian ditulis dengan urutan yang sama.
 1. **Tujuan** menjelaskan apa yang sedang dibuktikan.
 2. **Masuk sebagai** menyebut akun yang dipakai.
 3. **Langkah** adalah urutan klik yang harus diikuti, satu per satu.
-4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 9.
+4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 10.
 
 Kerjakan pengujian berurutan dari atas. Beberapa pengujian mengubah data, misalnya menonaktifkan akun. Di bagian itu ada petunjuk untuk mengembalikannya. Bila data sudah terlanjur berantakan, data demo bisa dibuat ulang seperti di Bagian 2.2.
 
@@ -41,7 +41,7 @@ Semua akun memakai kata sandi `password`.
 Supaya tidak bingung saat mencoba, berikut hal yang memang belum dibuat dan baru hadir di fase berikutnya.
 
 - Dasbor masih berisi sapaan saja. Kartu angka dan grafik dibuat di Fase 8.
-- Kriteria, bobot, skala nilai, dan penilaian per order sudah ada, tetapi belum dipakai menghitung apa pun. Perhitungan SAW dibuat di Fase 6.
+- Perhitungan SAW sudah ada di menu Jalankan Perhitungan (Bab 8), tetapi daftar evaluasi, halaman rincian dengan tujuh tab, penyesuaian peringkat, persetujuan, dan penerapan prioritas baru dibuat di Fase 7.
 - Kunci order otomatis saat status menjadi Dikerjakan belum aktif. Ikon gembok pada data demo sudah terpasang oleh data awal, tetapi mengubah status order secara manual, atau mengimpor order berstatus Dikerjakan, belum memasang atau melepas gembok. Itu dikerjakan di Fase 7.
 - Kolom Prioritas selalu bernilai Normal sampai fitur penerapan prioritas selesai di Fase 7.
 - Halaman log aktivitas lengkap baru ada di Fase 9. Yang sudah ada hanya riwayat perubahan di halaman detail order.
@@ -69,7 +69,7 @@ Langkah ini membuat semua tabel dari awal dan mengisinya dengan data contoh: emp
 php artisan migrate:fresh --seed
 ```
 
-**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 9.
+**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 10.
 
 Tanggal pada order demo dibuat relatif terhadap hari ini. Jadi beberapa order selalu terlambat dan beberapa selalu hampir jatuh tempo, kapan pun data dibuat. Nilai manual penilaian juga dibuat dengan usia yang berbeda, ada yang baru dan ada yang sudah lima hari.
 
@@ -940,11 +940,135 @@ Coba satu per satu di halaman **Impor Order**, lalu klik **Periksa berkas**.
 
 **Hasil yang diharapkan:** sesuai di atas.
 
-## 8. Menjalankan Pengujian Otomatis
+## 8. Fase 6: Mesin SAW dan Evaluasi
+
+Bab ini membuktikan bahwa sistem bisa menghitung peringkat prioritas semua order yang masih aktif dengan metode SAW, lalu menyimpan hasilnya sebagai evaluasi. Menu barunya bernama **Jalankan Perhitungan**, ada di grup **Prioritas**, dan hanya untuk **Manajer**.
+
+Halaman evaluasi yang lengkap (daftar evaluasi, tujuh tab rincian, penyesuaian peringkat, persetujuan, dan penerapan prioritas) baru dibuat di Fase 7. Untuk sementara, hasil perhitungan terakhir tampil sebagai tabel peringkat di halaman yang sama dengan tombol hitung.
+
+### 8.1 Cara sistem menghitung
+
+1. Yang dihitung adalah order berstatus Antri dan Dikerjakan. Nilai tiap kriteria diubah ke skala 1 sampai 5 memakai aturan dari Bab 5. Nilai otomatis (tenggat, urgensi, nilai order, lama menunggu) dihitung ulang tepat saat tombol ditekan.
+2. Setiap nilai skala dibagi nilai skala terbesar di kolom kriteria itu. Hasilnya disebut nilai normalisasi.
+3. Skor sebuah order adalah jumlah dari bobot kriteria dikali nilai normalisasinya. Skor disimpan 6 desimal dan ditampilkan 4 desimal.
+4. Peringkat sistem murni urutan skor, dari tertinggi. Bila skor sama, tenggat yang lebih dekat didahulukan, lalu tanggal masuk yang lebih awal.
+5. Peringkat akhir disusun dalam tiga kelompok berurutan. **Terkunci** berisi order yang sedang dikerjakan atau yang dikunci Manajer. **Eskalasi** berisi order Antri yang tidak terkunci dan sudah menunggu lebih dari 7 hari, diurutkan dari yang paling lama menunggu. **Biasa** berisi semua order lain. Di dalam kelompok Terkunci dan Biasa, urutannya menurut skor.
+6. Nilai manual yang masih kosong dihitung sebagai skala 1 (terburuk) dan dicatat sebagai peringatan.
+
+Setiap perhitungan disimpan lengkap sebagai satu evaluasi: waktu, pelaksana, salinan kriteria, bobot, skala, dan pengaturan yang dipakai, serta semua nilai tiap order. Evaluasi yang sudah tersimpan tidak bisa diubah atau dihapus, jadi hasil lama tetap bisa diperiksa walau bobot dan skala berubah kemudian. Perubahan yang diizinkan hanya status evaluasi, yang dipakai di Fase 7.
+
+### 8.2 Uji 6.1: Membuka halaman dan membaca kesiapan data
+
+**Tujuan:** melihat apakah data siap dihitung sebelum menekan tombol.
+**Masuk sebagai:** Manajer (`manajer@spk.test`).
+
+1. Buka menu **Prioritas**, lalu **Jalankan Perhitungan**.
+
+![Halaman Jalankan Perhitungan](50-hitung-halaman.png)
+
+**Hasil yang diharapkan:** bagian **Kesiapan data** menyatakan data siap dihitung dan menampilkan empat angka: **Order yang dihitung 21**, **Belum lengkap 4**, **Perlu diperbarui 4**, dan **Kriteria aktif 7**. Bagian **Hasil perhitungan terakhir** di bawahnya menampilkan keadaan kosong "Belum ada hasil perhitungan" karena belum pernah ada yang dihitung.
+
+Angka 4 dan 4 berlaku pada hari data demo dibuat, sama seperti di Bab 6.
+
+### 8.3 Uji 6.2: Menjalankan perhitungan
+
+**Tujuan:** menghitung peringkat dan memastikan order yang belum lengkap tidak lolos tanpa sepengetahuan Manajer.
+**Masuk sebagai:** Manajer.
+
+1. Klik **Jalankan Perhitungan** di pojok kanan atas.
+
+![Jendela konfirmasi perhitungan](51-hitung-dialog.png)
+
+2. Jendela yang terbuka menyebut jumlah order dan kriteria, lalu mendaftar order yang **Belum lengkap** (beserta kriteria yang kosong) dan yang **Perlu diperbarui**. Nama evaluasi dan catatan boleh dikosongkan. Bila nama kosong, evaluasi diberi nama tanggal dan jamnya.
+3. Klik **Hitung sekarang** tanpa mencentang kotak di bagian bawah.
+
+![Perhitungan ditolak tanpa centang](52-hitung-galat-centang.png)
+
+**Hasil yang diharapkan:** jendela tetap terbuka dan muncul tulisan merah "Centang dulu untuk melanjutkan, atau tutup dan lengkapi nilainya lebih dulu." Belum ada evaluasi yang tersimpan.
+
+4. Centang **Saya sudah membaca daftar di atas dan tetap ingin menghitung**, lalu klik **Hitung sekarang**.
+
+![Hasil perhitungan](53-hitung-hasil.png)
+
+**Hasil yang diharapkan:** muncul pemberitahuan "Perhitungan selesai. 21 order dihitung. Peringkat 1: ORD-2026-0005." Tabel hasil terisi 21 baris. Judul tabel menyebut nama evaluasi, waktunya, siapa yang menjalankan, dan statusnya (Draf).
+
+Bila semua order lengkap dan segar, kotak centang tidak muncul dan perhitungan langsung jalan.
+
+### 8.4 Uji 6.3: Membaca tabel hasil
+
+**Tujuan:** memahami arti tiap kolom dan melihat peringkat sistem berdampingan dengan peringkat akhir.
+**Masuk sebagai:** Manajer.
+
+Pada tabel hasil dari Uji 6.2:
+
+- **Peringkat** adalah peringkat akhir, sesudah kelompok diterapkan. **Sistem** adalah peringkat murni dari skor.
+- **Order** memuat nomor dan nama pelanggan. **Tenggat** dan **Menunggu** (hari sejak order masuk) ikut ditampilkan karena keduanya dipakai aturan peringkat.
+- **Skor** tampil dengan 4 desimal.
+- **Kelompok** berisi Terkunci, Eskalasi, atau Biasa.
+- **Perubahan** membandingkan dengan perhitungan sebelumnya. Pada perhitungan pertama kolom ini berisi tanda hubung karena belum ada pembanding.
+
+**Hasil yang diharapkan:** tujuh baris teratas berkelompok **Terkunci**: enam order Dikerjakan (ORD-2026-0005 sampai 0010) dan ORD-2026-0019 yang dikunci manual. Di bawahnya ada enam baris **Eskalasi**, yaitu order Antri yang menunggu 9 hari atau lebih, dimulai dari yang paling lama (ORD-2026-0013, 14 hari). Sisanya delapan baris **Biasa**. Contoh pengaruh kelompok: ORD-2026-0011 skornya 0,8718, peringkat sistem 2, tetapi peringkat akhir 10 karena berada di kelompok Eskalasi di bawah semua order terkunci.
+
+### 8.5 Uji 6.4: Batas tunggu 7 hari dan 8 hari
+
+**Tujuan:** memastikan order yang menunggu tepat 7 hari belum dieskalasi, dan yang menunggu 8 hari sudah.
+**Masuk sebagai:** Manajer, dengan akses terminal di folder `dss`.
+
+Pemilih tanggal di formulir order hanya bisa dipakai lewat kalender, jadi tanggal masuk diubah dengan perintah berikut. Perintah ini mengubah ORD-2026-0021 menjadi order yang masuk 7 hari lalu.
+
+```
+php artisan tinker --execute="App\Models\ProductionOrder::where('number','ORD-2026-0021')->update(['order_date' => today()->subDays(7)]);"
+```
+
+1. Jalankan perintah di atas, lalu klik **Jalankan Perhitungan**, centang kotak konfirmasi, dan klik **Hitung sekarang**.
+
+**Hasil yang diharapkan:** ORD-2026-0021 tampil dengan **Menunggu 7 hari**, kelompok **Biasa**, peringkat 17, dan **Perubahan Tetap**. Belum dieskalasi karena batasnya lebih dari 7 hari.
+
+2. Jalankan perintah yang sama dengan `subDays(8)`, lalu hitung lagi.
+
+![Order lama dieskalasi pada hari ke-8](54-hitung-eskalasi.png)
+
+**Hasil yang diharapkan:** ORD-2026-0021 tampil dengan **Menunggu 8 hari**, kelompok **Eskalasi**, **Peringkat 14**, tetapi **Sistem 13**. Skornya tetap 0,5500. Order itu naik di atas semua order Biasa walau skornya lebih rendah, dan peringkat sistem tidak ikut berubah, jadi pengaruh eskalasi selalu terlihat dari selisih dua kolom itu. Kolom Perubahan menyebut **Naik 3**, yaitu dari peringkat 17 di perhitungan sebelumnya.
+
+### 8.6 Uji 6.5: Membaca perubahan antar perhitungan
+
+**Tujuan:** melihat order mana yang naik atau turun sejak perhitungan sebelumnya.
+**Masuk sebagai:** Manajer.
+
+Pada hasil Uji 6.4 langkah 2, perhatikan kolom **Perubahan** dan badge warnanya.
+
+**Hasil yang diharapkan:** **Naik n** berwarna hijau (order naik n tingkat), **Turun n** berwarna merah, **Tetap** berwarna abu-abu, dan **Baru** berwarna biru untuk order yang belum ada di perhitungan sebelumnya. Dalam contoh ini ORD-2026-0014, 0015, dan 0020 tampil **Turun 1** karena ORD-2026-0021 naik ke kelompok Eskalasi di atas mereka. Pembanding selalu perhitungan terakhir yang statusnya bukan Dibatalkan.
+
+### 8.7 Uji 6.6: Perhitungan ditolak bila data belum siap
+
+**Tujuan:** memastikan perhitungan tidak berjalan dengan bobot atau order yang tidak layak.
+**Masuk sebagai:** Manajer.
+
+1. Buka **Kriteria dan Bobot**. Klik tiga titik pada baris C7, pilih **Nonaktifkan**, lalu konfirmasi. Total bobot kini tinggal 90%.
+2. Buka **Jalankan Perhitungan**.
+
+![Perhitungan ditolak karena bobot](55-hitung-ditolak.png)
+
+**Hasil yang diharapkan:** bagian Kesiapan data menyatakan "Perhitungan belum bisa dijalankan" dan menulis dengan huruf merah "Belum siap dihitung: total bobot harus tepat 100%." Tombol **Jalankan Perhitungan** berwarna pudar dan tidak bisa ditekan. Hal yang sama terjadi bila skala sebuah kriteria belum lengkap, atau bila tidak ada satu pun order Antri atau Dikerjakan (pesannya mengarahkan ke menu Order Produksi). Peringkat dari perhitungan sebelumnya tetap terlihat.
+
+**Mengembalikan data:** aktifkan kembali C7, atau buat ulang data demo seperti di Bagian 2.2.
+
+### 8.8 Uji 6.7: Hak akses
+
+**Tujuan:** memastikan hanya Manajer yang bisa menjalankan perhitungan.
+
+1. Masuk sebagai **Manajer**. Menu **Jalankan Perhitungan** tampil di grup Prioritas.
+2. Masuk sebagai **Admin**, **Supervisor**, atau **Pimpinan**. Menu itu tidak tampil. Membuka `http://localhost:8001/admin/jalankan-perhitungan` langsung menghasilkan halaman 403.
+
+**Hasil yang diharapkan:** sesuai di atas. Ketiga peran lain akan melihat hasil evaluasi lewat halaman Evaluasi di Fase 7.
+
+**Mengembalikan data:** buat ulang data demo seperti di Bagian 2.2. Evaluasi yang tersimpan ikut terhapus oleh perintah itu.
+
+## 9. Menjalankan Pengujian Otomatis
 
 Selain diuji dengan tangan seperti di atas, aplikasi punya pengujian otomatis yang menjalankan ratusan pemeriksaan dalam hitungan detik. Pengujian ini memakai basis data terpisah bernama `dss_test`, jadi tidak menyentuh data demo Anda.
 
-### 5.1 Cara menjalankan
+### 9.1 Cara menjalankan
 
 1. Pastikan MySQL menyala dan basis data `dss_test` ada.
 2. Di terminal folder `dss`, jalankan perintah berikut.
@@ -955,9 +1079,9 @@ php artisan test --compact
 
 3. Tunggu sekitar setengah menit.
 
-**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 282 tes dengan 1.332 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
+**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 347 tes dengan 1.645 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
 
-### 5.2 Apa saja yang diuji
+### 9.2 Apa saja yang diuji
 
 - **Masuk dan profil:** login berhasil dan gagal, akun nonaktif, batas lima percobaan, halaman yang tertutup bagi tamu, ganti nama dan kata sandi.
 - **Pengguna:** hak akses Admin, tambah, ubah, nonaktifkan, atur ulang kata sandi, serta aturan Admin terakhir dan larangan menonaktifkan diri sendiri.
@@ -967,9 +1091,10 @@ php artisan test --compact
 - **Skala nilai:** rentang yang valid dan yang salah (tumpang tindih, celah, terbalik arah, batas tidak terbuka), konversi nilai asli ke skala termasuk batas bawah dan atas, serta contoh pada spesifikasi.
 - **Penilaian:** nilai otomatis (sisa hari, urgensi, nilai order, lama menunggu) dan perubahannya, nilai manual dengan batas persen, jam, dan rupiah, urgensi yang ditimpa dengan alasan wajib, batas kedaluwarsa tiga hari, kelengkapan dan filternya, riwayat nilai, hak akses Manajer dan Supervisor, serta nilai rupiah yang disembunyikan dari Supervisor.
 - **Impor dan ekspor Excel:** pembacaan berkas dan judul kolom, aturan tiap kolom (kode, jumlah, tanggal, harga, status, persen, jam), dua puluh order benar dan dua baris rusak, mode tambah saja dan tambah serta perbarui, kolom opsional yang kosong tidak menimpa, batas 1.000 baris, berkas bukan Excel, penyimpanan satu transaksi yang batal total bila gagal, ekspor sesuai filter dan pencarian, serta ekspor yang diimpor kembali tanpa mengubah data.
+- **Mesin SAW dan evaluasi:** contoh hitung spesifikasi (skor 0,8550, 0,7400, 0,7000 dan peringkat A, C, B), kasus khusus (satu order, nilai sama, nilai kosong, skor sama), pengelompokan peringkat dan contoh order lama yang dieskalasi, batas 7 dan 8 hari, kunci otomatis dan manual beserta kunci yang kedaluwarsa, pemeriksaan sebelum hitung, konfirmasi order belum lengkap, salinan kriteria dan pengaturan yang tidak ikut berubah, peringkat sebelumnya, evaluasi yang tidak bisa diubah atau dihapus, penyimpanan satu transaksi, kinerja 200 dan 1.000 order, serta hak akses halaman hitung.
 - **Data demo:** jumlah dan sebaran data, kriteria awal dan skalanya, nilai penilaian demo, dan setiap halaman terbuka tanpa kosong untuk keempat peran.
 
-### 5.3 Menjalankan sebagian tes
+### 9.3 Menjalankan sebagian tes
 
 Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama tes, misalnya:
 
@@ -977,7 +1102,7 @@ Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama te
 php artisan test --compact --filter="order"
 ```
 
-## 9. Jika Ada Masalah
+## 10. Jika Ada Masalah
 
 **Halaman tidak bisa dibuka atau muncul "gagal terhubung".** Pastikan perintah `php artisan serve --port=8001` masih berjalan di terminal dan alamatnya `http://localhost:8001/admin`.
 
@@ -995,13 +1120,15 @@ php artisan test --compact --filter="order"
 
 **Semua baris ditolak saat memeriksa berkas.** Baca pesan di bagian Hasil pemeriksaan. Penyebab paling sering: kode pelanggan atau produk belum ada di Data Master, atau judul kolom di baris pertama diubah. Unduh ulang templat dan salin data Anda ke dalamnya.
 
+**Tombol Jalankan Perhitungan pudar dan tidak bisa ditekan.** Baca tulisan merah di bagian Kesiapan data. Penyebabnya total bobot belum 100%, skala nilai sebuah kriteria belum lengkap, atau belum ada order Antri atau Dikerjakan.
+
 **Tombol Impor sekarang tidak muncul.** Tombol itu baru tampil setelah Periksa berkas dan hanya bila ada sedikitnya satu baris yang benar.
 
 **Tes otomatis gagal terhubung.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala.
 
-## 10. Lampiran: Ringkasan Hak Akses
+## 11. Lampiran: Ringkasan Hak Akses
 
-Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 2.
+Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 6.
 
 | Kegiatan | Admin | Manajer | Supervisor | Pimpinan |
 |---|---|---|---|---|
@@ -1019,4 +1146,5 @@ Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 2.
 | Timpa urgensi pelanggan pada satu order | Tidak | Ya | Tidak | Tidak |
 | Lihat nilai order dalam rupiah | Ya | Ya | Tidak | Ya |
 | Impor dan ekspor Excel | Ya | Ya | Tidak | Tidak |
+| Jalankan perhitungan SAW | Tidak | Ya | Tidak | Tidak |
 | Ganti nama dan kata sandi sendiri | Ya | Ya | Ya | Ya |

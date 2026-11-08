@@ -27,9 +27,9 @@ Butuh dua basis data kosong: `dss` dan `dss_test`. Akun demo (kata sandi `passwo
 
 ## Status
 
-Fase 0 sampai 5 dari 12 selesai, 33 dari 72 tugas, 282 tes lulus. Fase 6 (mesin SAW dan evaluasi) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
+Fase 0 sampai 6 dari 12 selesai, 42 dari 72 tugas, 347 tes lulus. Fase 7 (hasil, persetujuan, penerapan) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
 
-Yang sudah ada: masuk dan profil, pengguna, pelanggan, produk, order produksi, kriteria dengan bobot dan skala nilai, matriks penilaian, impor dan ekspor Excel. Perhitungan SAW belum ada, jadi jangan menganggap ada peringkat atau evaluasi.
+Yang sudah ada: masuk dan profil, pengguna, pelanggan, produk, order produksi, kriteria dengan bobot dan skala nilai, matriks penilaian, impor dan ekspor Excel, mesin SAW dan peringkat berkelompok, evaluasi tersimpan, dan halaman Jalankan Perhitungan (hanya Manajer). Yang belum ada: daftar dan detail evaluasi, penyesuaian peringkat, persetujuan, penerapan prioritas (label Prioritas Utama), kunci otomatis saat ganti status, dasbor, laporan, log, dan pengaturan.
 
 ## Dokumen yang jadi acuan
 

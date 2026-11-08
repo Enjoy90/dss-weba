@@ -14,7 +14,7 @@ Disusun per topik. Urutan kronologis per fase ada di bagian "Catatan kemajuan" p
 2. Normalisasi r = x dibagi nilai skala terbesar di kolom itu (semua kriteria diperlakukan sebagai benefit setelah dikonversi ke skala).
 3. Skor V = jumlah bobot kali r. Simpan 6 desimal, tampilkan 4.
 4. Nilai kosong diberi skala 1 dan dicatat sebagai peringatan.
-5. SAW berjalan untuk jumlah kriteria berapa pun. Contoh PRD 11.6 dan 11.7 adalah uji unit wajib mesin SAW (Fase 6).
+5. SAW berjalan untuk jumlah kriteria berapa pun. Contoh PRD 11.6 dan 11.7 adalah uji unit mesin SAW dan pengurut peringkat (`tests/Unit`).
 
 ## Kriteria dan bobot
 
@@ -45,6 +45,19 @@ Keputusan perancang (disebut K-12 sampai K-14 di PRD, ditolak untuk ditanyakan u
 
 Peringkat sistem murni dari skor. Peringkat akhir disusun tiga kelompok berurutan: terkunci (urut skor), eskalasi (urut paling lama menunggu, lalu skor), biasa (urut skor). Skala C7 dirancang agar skala 5 tercapai tepat di batas tunggu maksimum. Bila batas diubah, skala C7 perlu disesuaikan. Kolom `evaluated_at` tidak boleh memakai ON UPDATE.
 
+## Evaluasi dan peringkat (Fase 6)
+
+- `SawCalculator` dan `PriorityRanker` murni, tanpa basis data dan tanpa jam. Kunci yang masih berlaku dan lama menunggu dihitung oleh pemanggil (`EvaluationService`), jadi pengurut mudah diuji.
+- Kunci dibaca dari kolom `lock_type` lewat `ProductionOrder::lockIsActive()`, bukan dari status order. Kunci manual berlaku sampai tanggal berakhirnya dan lepas keesokan harinya. Kunci otomatis hanya dihitung bila `lock_in_progress` aktif.
+- Eskalasi: order Antri, tidak terkunci, lama menunggu lebih dari `max_wait_days` (7 hari belum, 8 hari ya). Order Dikerjakan tidak pernah dieskalasi.
+- Urutan di dalam kelompok: Terkunci dan Biasa menurut skor, Eskalasi menurut lama menunggu lalu skor. Seri skor: tenggat terdekat, tanggal masuk lebih awal, lalu id order terkecil (supaya hasil tidak bergantung urutan data).
+- Nilai kosong diberi skala 1 dan dicatat di `warnings` (`empty`). Nilai manual kedaluwarsa dicatat sebagai `stale`. Order belum lengkap tetap ikut dihitung (K-03). Opsi "wajib lengkap" belum dibuat.
+- Pemeriksaan sebelum hitung: pemblokir (bobot dan skala siap, ada order aktif) menolak sama sekali. Order belum lengkap atau kedaluwarsa butuh konfirmasi, dijaga di server lewat `acknowledgeWarnings`. Jalur terjadwal (Fase 9) harus memberi `true` dan memakai pemicu `scheduled` tanpa pengguna.
+- Evaluasi disimpan dalam satu transaksi bersama salinan kriteria, bobot, skala, dan pengaturan. Item disisipkan massal. Evaluasi dan item tidak bisa diubah atau dihapus di tingkat model, kecuali kolom alur status pada evaluasi (`Evaluation::WORKFLOW_COLUMNS`) dan `final_rank` serta `adjustment_reason` pada item (`EvaluationItem::ADJUSTABLE_COLUMNS`). `evaluated_at` memakai kolom datetime, bukan timestamp.
+- `previous_rank` diambil dari evaluasi terakhir yang tidak Dibatalkan, hanya bila order ada di evaluasi itu. Pada evaluasi pertama kolom Perubahan di layar berisi tanda hubung.
+- Pengaturan dibaca dari `settings` dengan bawaan: `max_wait_days` 7, `lock_in_progress` aktif, `top_n_priority` 5, `stale_value_days` 3. Salinannya disimpan di `settings_snapshot`.
+- Halaman Jalankan Perhitungan hanya untuk Manajer. Tabel peringkat di halaman itu bersifat sementara sampai halaman evaluasi (P7-01 dan P7-02) ada. Salinan order tidak memuat harga, tetapi `raw_values` kriteria C6 memuat rupiah: tampilan evaluasi untuk Supervisor wajib menyembunyikannya.
+
 ## Hak akses
 
 Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
@@ -64,11 +77,11 @@ Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer P
 
 ## Sengaja belum dibuat atau ditunda
 
-- Kunci otomatis saat status berubah ke Dikerjakan, dan pelepasan saat selesai atau batal (P7-08). Order demo sudah terkunci lewat data awal, tetapi order yang diimpor atau diubah statusnya dengan tangan belum otomatis terkunci.
-- Tabel `activity_logs` dan `settings` dimajukan dari Fase 9 dengan isi minimal. Halaman log (P9-01) dan halaman pengaturan (P9-02) belum ada. `stale_value_days` dibaca dari tabel `settings`, bawaan 3.
-- Kolom peringkat terakhir, bagian hasil di detail order, dan grafik tren menyusul di fase yang menghasilkan datanya.
+- Kunci otomatis saat status berubah ke Dikerjakan, dan pelepasan saat selesai atau batal (P7-08). Order demo sudah terkunci lewat data awal, tetapi order yang diimpor atau diubah statusnya dengan tangan belum otomatis terkunci, jadi belum masuk kelompok Terkunci saat dihitung.
+- Daftar dan detail evaluasi, penyesuaian peringkat, persetujuan, penerapan Prioritas Utama, bandingkan evaluasi, dan grafik tren (Fase 7). Pemantauan order Tertahan (Fase 8 dan 9), opsi "wajib lengkap", dan notifikasi eskalasi juga belum ada.
+- Tabel `activity_logs` dan `settings` dimajukan dari Fase 9 dengan isi minimal. Halaman log (P9-01) dan halaman pengaturan (P9-02) belum ada. `stale_value_days`, `max_wait_days`, `lock_in_progress`, dan `top_n_priority` dibaca dari tabel `settings` dengan bawaan di kode.
+- Kolom peringkat terakhir, bagian hasil di detail order, dan grafik tren menyusul di Fase 7 (datanya sudah tersimpan di `evaluation_items`).
 - Angka demo "4 belum lengkap, 4 kedaluwarsa" hanya benar pada hari data di-seed, karena tanggal di seeder relatif terhadap hari ini.
-- Belum ada commit di riwayat git saat berkas ini ditulis.
 
 ## Batasan teknis yang disepakati
 

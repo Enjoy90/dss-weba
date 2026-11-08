@@ -7,7 +7,7 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - PHP harus 8.3 atau lebih baru. Di mesin pemilik proyek ada dua PHP, 8.2 sebagai bawaan dan 8.3 di `D:\php83`. Bila perintah artisan atau composer gagal karena versi, pasang PATH ke PHP 8.3 lebih dulu.
 - Basis data `dss` dan `dss_test` harus ada dan kosong sebelum `migrate`. Tes memakai `dss_test` lewat `phpunit.xml`.
 - MariaDB 10.4: jangan pakai `JSON_ARRAYAGG` dan fungsi MySQL 8 lain yang tidak ada di sana.
-- Kolom `evaluated_at` (Fase 6) tidak boleh memakai ON UPDATE.
+- Kolom `evaluated_at` tidak boleh memakai ON UPDATE. Di MariaDB 10.4 kolom timestamp pertama otomatis mendapat `ON UPDATE CURRENT_TIMESTAMP`, jadi migrasi memakai `dateTime`. Tes membaca `information_schema` untuk memastikannya.
 
 ## Eloquent dan model
 
@@ -17,6 +17,10 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - `Criterion` yang disimpan otomatis menghitung ulang bobot. Seeder yang mengisi bobot harus menyetel `weight_mode` ke `direct` sebelum membuat kriteria, kalau tidak bobotnya tertimpa.
 
 ## Filament dan tampilan
+
+- `->label('')` pada `TextEntry` membuat Filament menampilkan nama field sebagai label (misalnya "Warning hint"). Pakai `->hiddenLabel()`.
+- `DatePicker` non-native bersifat baca-saja di peramban (kalender), jadi Playwright tidak bisa mengetik tanggal. Ubah tanggal uji lewat `php artisan tinker --execute`.
+- Isi `modalDescription` tidak dirender di HTML tes Livewire. Baca lewat `$component->instance()->getMountedAction()->getModalDescription()`.
 
 - Tabel melebar dan tombol terpotong di layar 1366 piksel. Sembunyikan kolom sekunder secara bawaan dan pindahkan aksi baris ke `ActionGroup` di kiri.
 - Status "siap dihitung" harus ikut memeriksa skala tiap kriteria aktif, bukan hanya total bobot.
@@ -30,6 +34,13 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Pint bisa mengubah nama kelas pada type hint `Testable`. Jalankan Pint lalu jalankan tes lagi.
 - Mutasi lewat regex di PHP rawan gagal diterapkan karena `$user` ikut diinterpolasi. Ubah berkas dengan skrip yang mengganti string tepat, dan pastikan perubahan benar-benar terjadi sebelum menjalankan tes.
 
+## Evaluasi
+
+- Model yang gagal `update()` karena penjaga kekekalan tetap kotor. Di tes, lakukan perubahan yang diizinkan lewat `$model->fresh()`.
+- JSON mengembalikan `5` untuk `5.0`. Bandingkan nilai asli di tes dengan `toEqual`, bukan `toBe`.
+- Item evaluasi disisipkan massal lewat `insert()` sehingga tidak melewati penjaga model. Jangan memakai jalur itu untuk mengubah data yang sudah tersimpan.
+- Kelompok Terkunci menurut kolom `lock_type`. Order Dikerjakan yang kolomnya masih `none` (hasil impor atau ubah status tangan) dihitung Biasa sampai P7-08 selesai.
+
 ## Tangkapan layar dan docx
 
 - Batas masuk 5 kali per menit. Skrip tangkap layar yang dijalankan beruntun harus diberi jeda sekitar 70 detik, atau login akan ditolak.
@@ -37,3 +48,5 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Nomor halaman daftar isi docx dibaca dari PDF hasil konversi. Jangan memakai PDF lama bila konversi gagal, hapus dulu PDF-nya. `bangun.sh` sudah melakukannya.
 - Dua build docx yang berjalan bersamaan saling menimpa berkas. Jalankan satu per satu.
 - Tangkapan layar harus diambil sesudah `php artisan migrate:fresh --seed`, supaya angka di gambar sama dengan angka di teks panduan.
+- Membangun docx butuh LibreOffice dan PyMuPDF (`pip install pymupdf`). Di mesin pemilik proyek keduanya baru dipasang saat Fase 6 (LibreOffice lewat winget). Jangan menjalankan `bangun.sh` selagi pemasang LibreOffice masih berjalan, percobaan pertama berakhir tanpa membangun apa pun.
+- Skrip `tangkap-layar/fase6.js` mengubah data (tanggal masuk ORD-2026-0021, menonaktifkan C7, menyimpan evaluasi). Jalankan `migrate:fresh --seed` sesudahnya.
