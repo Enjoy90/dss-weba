@@ -6,6 +6,7 @@ use App\Enums\LockType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Models\Concerns\LogsActivity;
+use Carbon\CarbonInterface;
 use Database\Factories\ProductionOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -188,6 +189,19 @@ class ProductionOrder extends Model
     public function isLocked(): bool
     {
         return $this->lock_type->isLocked();
+    }
+
+    /**
+     * Whether the lock still holds on the given day. A manual lock lasts through its end date and
+     * lapses the day after. The automatic lock only counts while the setting for it is on.
+     */
+    public function lockIsActive(CarbonInterface $on, bool $autoLockEnabled = true): bool
+    {
+        return match ($this->lock_type) {
+            LockType::None => false,
+            LockType::Auto => $autoLockEnabled,
+            LockType::Manual => $this->lock_until === null || $this->lock_until->copy()->startOfDay()->gte($on->copy()->startOfDay()),
+        };
     }
 
     /**

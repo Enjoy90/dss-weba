@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Criterion;
+use App\Models\Evaluation;
 use App\Models\ProductionOrder;
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'production_orders' => ProductionOrder::class,
             'criteria' => Criterion::class,
+            'evaluations' => Evaluation::class,
         ]);
 
         Password::defaults(fn (): Password => Password::min(8));

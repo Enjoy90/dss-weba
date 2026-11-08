@@ -53,6 +53,7 @@ class ActivityLog extends Model
             'order.updated' => 'Order diubah',
             'criterion.created' => 'Kriteria dibuat',
             'criterion.updated' => 'Kriteria diubah',
+            'evaluation.created' => 'Perhitungan dijalankan',
             default => $this->action,
         };
     }
