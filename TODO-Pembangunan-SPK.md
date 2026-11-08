@@ -14,6 +14,7 @@ Ukuran: **S** kurang dari 2 jam, **M** sekitar setengah hari, **L** sekitar satu
 - Setiap halaman punya tampilan keadaan kosong, hak akses per peran lewat Policy, dan validasi di server.
 - Database harus jalan di MySQL 8 dan MariaDB 10.4. Hindari fungsi yang tidak ada di MariaDB 10.4 (misalnya JSON_ARRAYAGG).
 - Commit hanya atas persetujuan pengguna. Tanpa Claude sebagai co-author.
+- Konteks untuk kolaborator dan AI ada di `AGENTS.md` dan `docs/memori`. Berkas itu harus ikut diperbarui tiap fase ditutup, aturannya di `docs/memori/aturan-kerja.md`.
 
 ## Pintu keluar tiap fase
 
@@ -24,6 +25,7 @@ Fase dinyatakan selesai bila semua butir ini terpenuhi:
 - [ ] `vendor/bin/pint --dirty` bersih.
 - [ ] Halaman fase itu dibuka di peramban dengan data demo dan tidak ada yang kosong atau error.
 - [ ] Peran yang tidak berhak sudah dicoba dan ditolak.
+- [ ] Panduan bertambah satu bab (docx dibangun ulang), serta bagian Status di `AGENTS.md` dan berkas di `docs/memori` sudah diperbarui.
 
 (Salin daftar ini ke catatan fase saat menutup fase.)
 

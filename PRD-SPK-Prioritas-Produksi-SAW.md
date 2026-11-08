@@ -1267,6 +1267,8 @@ Ukuran: **S** kurang dari 2 jam, **M** sekitar setengah hari, **L** sekitar satu
 
 **Jumlah tugas:** 72 tugas dalam 12 fase.
 
+**Catatan pelaksanaan:** kemajuan per tugas dicatat di `TODO-Pembangunan-SPK.md`, yang menjadi sumber kebenaran status. Konteks proyek untuk kolaborator dan AI ada di `AGENTS.md` dan folder `docs/memori` pada repositori. Setiap fase yang ditutup memperbarui keduanya bersama panduan pengujian.
+
 ## 15. Risiko dan Mitigasi
 
 | Risiko | Dampak | Mitigasi |
