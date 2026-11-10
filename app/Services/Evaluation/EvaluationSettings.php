@@ -14,6 +14,10 @@ final class EvaluationSettings
 
     public const DEFAULT_TOP_N = 5;
 
+    public const DEFAULT_HELD_EVALUATIONS = 5;
+
+    public const DEFAULT_HELD_MIN_DAYS = 4;
+
     public static function maxWaitDays(): int
     {
         return max(1, (int) Setting::get('max_wait_days', self::DEFAULT_MAX_WAIT_DAYS));
@@ -22,6 +26,22 @@ final class EvaluationSettings
     public static function topN(): int
     {
         return max(1, (int) Setting::get('top_n_priority', self::DEFAULT_TOP_N));
+    }
+
+    /**
+     * How many evaluations in a row an order must stay outside the priority list to count as held (PRD F18 function 6).
+     */
+    public static function heldAfterEvaluations(): int
+    {
+        return max(1, (int) Setting::get('held_after_evaluations', self::DEFAULT_HELD_EVALUATIONS));
+    }
+
+    /**
+     * The least number of days an order must have waited to count as held.
+     */
+    public static function heldMinDays(): int
+    {
+        return max(0, (int) Setting::get('held_min_days', self::DEFAULT_HELD_MIN_DAYS));
     }
 
     /**

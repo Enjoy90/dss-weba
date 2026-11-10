@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Url;
 use UnitEnum;
 
 /**
@@ -59,6 +60,14 @@ class AssessmentMatrix extends Page implements HasTable
     protected static string|UnitEnum|null $navigationGroup = 'Produksi';
 
     protected static ?int $navigationSort = 20;
+
+    /**
+     * Lets a link, such as a dashboard card, open the page with a filter already on.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[Url(as: 'filters')]
+    public ?array $tableFilters = null;
 
     /**
      * @var array<int, Collection<int, ResolvedValue>>

@@ -9,6 +9,7 @@ use App\Models\Assessment;
 use App\Models\Criterion;
 use App\Models\ProductionOrder;
 use App\Models\Setting;
+use Closure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -21,6 +22,11 @@ use Illuminate\Support\Collection;
 class AssessmentResolver
 {
     public const DEFAULT_STALE_DAYS = 3;
+
+    /**
+     * Off only while counting completeness, which needs to know what is filled in but not the 1 to 5 score.
+     */
+    private bool $scoring = true;
 
     public function __construct(
         private readonly Carbon $today,
@@ -43,13 +49,13 @@ class AssessmentResolver
         $assessment = $assessments->firstWhere('criterion_id', $criterion->id);
 
         return match ($criterion->value_source) {
-            ValueSource::Deadline => $this->automatic($criterion, (float) $this->today->diffInDays($order->deadline_date, false)),
-            ValueSource::Waiting => $this->automatic($criterion, (float) max(0, $order->order_date->diffInDays($this->today))),
+            ValueSource::Deadline => $this->automatic($criterion, fn (): float => (float) $this->today->diffInDays($order->deadline_date, false)),
+            ValueSource::Waiting => $this->automatic($criterion, fn (): float => (float) max(0, $order->order_date->diffInDays($this->today))),
             ValueSource::CustomerUrgency => $assessment?->is_overridden && $assessment->raw_value !== null
                 ? $this->override($criterion, $assessment)
-                : $this->automatic($criterion, (float) $order->customer->urgency_level),
+                : $this->automatic($criterion, fn (): float => (float) $order->customer->urgency_level),
             ValueSource::OrderValue => $order->unit_price !== null
-                ? $this->automatic($criterion, (float) $order->unit_price * $order->quantity)
+                ? $this->automatic($criterion, fn (): float => (float) $order->unit_price * $order->quantity)
                 : $this->manual($criterion, $assessment),
             ValueSource::Manual => $this->manual($criterion, $assessment),
         };
@@ -92,25 +98,38 @@ class AssessmentResolver
      */
     public function orderIdsWith(Completeness $state, Collection $criteria): array
     {
+        $counting = clone $this;
+        $counting->scoring = false;
+
         return ProductionOrder::query()
             ->open()
             ->with(['customer', 'assessments'])
             ->get()
-            ->filter(fn (ProductionOrder $order): bool => $this->completeness($this->resolveAll($order, $criteria)) === $state)
+            ->filter(fn (ProductionOrder $order): bool => $counting->completeness($counting->resolveAll($order, $criteria)) === $state)
             ->pluck('id')
             ->all();
     }
 
-    private function automatic(Criterion $criterion, float $raw): ResolvedValue
+    private function scoreOf(Criterion $criterion, float $raw): ?int
     {
-        return new ResolvedValue($criterion, $raw, AssessmentSource::Automatic, $criterion->scoreFor($raw), false, null, null);
+        return $this->scoring ? $criterion->scoreFor($raw) : null;
+    }
+
+    /**
+     * @param  Closure(): float  $raw  worked out only when the value is really needed, not while counting completeness
+     */
+    private function automatic(Criterion $criterion, Closure $raw): ResolvedValue
+    {
+        $value = $this->scoring ? $raw() : null;
+
+        return new ResolvedValue($criterion, $value, AssessmentSource::Automatic, $value === null ? null : $criterion->scoreFor($value), false, null, null);
     }
 
     private function override(Criterion $criterion, Assessment $assessment): ResolvedValue
     {
         $raw = (float) $assessment->raw_value;
 
-        return new ResolvedValue($criterion, $raw, AssessmentSource::Override, $criterion->scoreFor($raw), false, $assessment->value_updated_at, $assessment->override_reason);
+        return new ResolvedValue($criterion, $raw, AssessmentSource::Override, $this->scoreOf($criterion, $raw), false, $assessment->value_updated_at, $assessment->override_reason);
     }
 
     private function manual(Criterion $criterion, ?Assessment $assessment): ResolvedValue
@@ -121,7 +140,7 @@ class AssessmentResolver
 
         $raw = (float) $assessment->raw_value;
 
-        return new ResolvedValue($criterion, $raw, AssessmentSource::Manual, $criterion->scoreFor($raw), $this->isStale($assessment), $assessment->value_updated_at, null);
+        return new ResolvedValue($criterion, $raw, AssessmentSource::Manual, $this->scoreOf($criterion, $raw), $this->isStale($assessment), $assessment->value_updated_at, null);
     }
 
     /**

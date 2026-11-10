@@ -7,6 +7,7 @@ use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Models\Concerns\LogsActivity;
 use App\Services\Evaluation\EvaluationSettings;
+use App\Services\Evaluation\HeldOrders;
 use Carbon\CarbonInterface;
 use Database\Factories\ProductionOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -192,6 +193,17 @@ class ProductionOrder extends Model
                         });
                 });
         });
+    }
+
+    /**
+     * Orders held back by the ranking: outside the priority list in the last evaluations and waiting long enough.
+     *
+     * @param  Builder<ProductionOrder>  $query
+     * @return Builder<ProductionOrder>
+     */
+    public function scopeHeld(Builder $query): Builder
+    {
+        return $query->whereKey(app(HeldOrders::class)->ids());
     }
 
     public function isLate(): bool

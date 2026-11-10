@@ -73,6 +73,17 @@ class Evaluation extends Model
     }
 
     /**
+     * The name for a choice list: the name with the time of the calculation (unless the name has it already) and the status.
+     */
+    public function optionLabel(): string
+    {
+        $stamp = $this->evaluated_at->format('d/m/Y H:i');
+        $name = str_contains((string) $this->name, $stamp) ? $this->name : $this->name.' ('.$stamp.')';
+
+        return $name.', '.$this->status->label();
+    }
+
+    /**
      * Only the newest evaluation that is not canceled may be applied (PRD F11 rule 2).
      */
     public function isLatest(): bool

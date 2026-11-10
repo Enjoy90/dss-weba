@@ -112,12 +112,7 @@ class CompareEvaluations extends Page
             ->orderByDesc('evaluated_at')
             ->orderByDesc('id')
             ->get()
-            ->mapWithKeys(function (Evaluation $evaluation): array {
-                $stamp = $evaluation->evaluated_at->format('d/m/Y H:i');
-                $name = str_contains((string) $evaluation->name, $stamp) ? $evaluation->name : $evaluation->name.' ('.$stamp.')';
-
-                return [$evaluation->id => $name.', '.$evaluation->status->label()];
-            })
+            ->mapWithKeys(fn (Evaluation $evaluation): array => [$evaluation->id => $evaluation->optionLabel()])
             ->all();
     }
 

@@ -347,6 +347,10 @@ class ProductionOrderResource extends Resource
                     ->label('Terkunci')
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->locked()),
+                Filter::make('held')
+                    ->label('Tertahan')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->held()),
             ])
             ->recordUrl(fn (ProductionOrder $record): string => static::getUrl('view', ['record' => $record]))
             ->recordActionsPosition(RecordActionsPosition::BeforeColumns)
