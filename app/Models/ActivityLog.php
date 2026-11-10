@@ -46,6 +46,25 @@ class ActivityLog extends Model
         return $this->morphTo();
     }
 
+    /**
+     * Writes one row of the activity log. The user is null when the system itself acted.
+     *
+     * @param  array<string, mixed>|null  $old
+     * @param  array<string, mixed>|null  $new
+     */
+    public static function record(string $action, ?Model $subject, ?array $old, ?array $new, ?User $by = null): self
+    {
+        return static::query()->create([
+            'user_id' => $by?->id,
+            'action' => $action,
+            'subject_type' => $subject?->getMorphClass(),
+            'subject_id' => $subject?->getKey(),
+            'old_values' => $old,
+            'new_values' => $new,
+            'ip_address' => app()->runningInConsole() ? null : request()->ip(),
+        ]);
+    }
+
     public function actionLabel(): string
     {
         return match ($this->action) {
@@ -53,7 +72,15 @@ class ActivityLog extends Model
             'order.updated' => 'Order diubah',
             'criterion.created' => 'Kriteria dibuat',
             'criterion.updated' => 'Kriteria diubah',
+            'order.locked' => 'Order dikunci',
+            'order.unlocked' => 'Kunci dilepas',
             'evaluation.created' => 'Perhitungan dijalankan',
+            'evaluation.submitted' => 'Evaluasi diajukan',
+            'evaluation.approved' => 'Evaluasi disetujui',
+            'evaluation.rejected' => 'Evaluasi ditolak',
+            'evaluation.applied' => 'Prioritas diterapkan',
+            'evaluation.canceled' => 'Evaluasi dibatalkan',
+            'evaluation.rank_adjusted' => 'Peringkat disesuaikan',
             default => $this->action,
         };
     }
@@ -107,6 +134,8 @@ class ActivityLog extends Model
             'locked_at' => 'Waktu kunci',
             'lock_until' => 'Kunci berakhir',
             'notes' => 'Catatan',
+            'reason' => 'Alasan',
+            'release_reason' => 'Alasan pelepasan',
             'code' => 'Kode',
             'name' => 'Nama',
             'unit' => 'Satuan',

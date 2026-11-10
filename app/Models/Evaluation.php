@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EvaluationStatus;
 use App\Enums\EvaluationTrigger;
+use App\Services\Evaluation\EvaluationSettings;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,6 +70,58 @@ class Evaluation extends Model
             'criteria_snapshot' => 'array',
             'settings_snapshot' => 'array',
         ];
+    }
+
+    /**
+     * Only the newest evaluation that is not canceled may be applied (PRD F11 rule 2).
+     */
+    public function isLatest(): bool
+    {
+        return static::query()
+            ->where('status', '!=', EvaluationStatus::Canceled->value)
+            ->orderByDesc('evaluated_at')
+            ->orderByDesc('id')
+            ->value('id') === $this->id;
+    }
+
+    /**
+     * Whether an earlier evaluation exists to compare with, so a missing previous rank means a new order
+     * and not simply "nothing to compare".
+     */
+    public function hasEarlier(): bool
+    {
+        return static::query()->where('id', '<', $this->id)->where('status', '!=', EvaluationStatus::Canceled->value)->exists();
+    }
+
+    public function allowsSubmit(): bool
+    {
+        return $this->status === EvaluationStatus::Draft && EvaluationSettings::approvalRequired();
+    }
+
+    public function allowsDecision(): bool
+    {
+        return $this->status === EvaluationStatus::Submitted;
+    }
+
+    /**
+     * Approved, or a draft when approval is not required, and the newest evaluation.
+     */
+    public function allowsApply(): bool
+    {
+        $ready = $this->status === EvaluationStatus::Approved
+            || ($this->status === EvaluationStatus::Draft && ! EvaluationSettings::approvalRequired());
+
+        return $ready && $this->isLatest();
+    }
+
+    public function allowsAdjust(): bool
+    {
+        return in_array($this->status, [EvaluationStatus::Draft, EvaluationStatus::Submitted], true);
+    }
+
+    public function allowsCancel(): bool
+    {
+        return in_array($this->status, [EvaluationStatus::Draft, EvaluationStatus::Submitted, EvaluationStatus::Approved], true);
     }
 
     /**

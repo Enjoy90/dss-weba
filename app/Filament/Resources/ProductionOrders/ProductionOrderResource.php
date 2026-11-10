@@ -6,12 +6,14 @@ use App\Enums\Completeness;
 use App\Enums\LockType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
+use App\Filament\Actions\OrderLockActions;
 use App\Filament\Resources\ProductionOrders\Pages\CreateProductionOrder;
 use App\Filament\Resources\ProductionOrders\Pages\EditProductionOrder;
 use App\Filament\Resources\ProductionOrders\Pages\ListProductionOrders;
 use App\Filament\Resources\ProductionOrders\Pages\ViewProductionOrder;
 use App\Filament\Resources\ProductionOrders\RelationManagers\ActivitiesRelationManager;
 use App\Filament\Resources\ProductionOrders\RelationManagers\AssessmentHistoriesRelationManager;
+use App\Filament\Widgets\OrderRankTrendChart;
 use App\Models\Assessment;
 use App\Models\Criterion;
 use App\Models\Customer;
@@ -31,6 +33,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -209,7 +212,9 @@ class ProductionOrderResource extends Resource
                     ->schema([
                         TextEntry::make('lock_type')
                             ->label('Status kunci')
-                            ->formatStateUsing(fn (LockType $state): string => $state->label()),
+                            ->formatStateUsing(fn (LockType $state, ProductionOrder $record): string => $state === LockType::Manual && ! $record->isLocked()
+                                ? 'Kunci manual (sudah berakhir)'
+                                : $state->label()),
                         TextEntry::make('lock_reason')
                             ->label('Alasan')
                             ->placeholder('-'),
@@ -246,6 +251,8 @@ class ProductionOrderResource extends Resource
                                 TextEntry::make('source')->label('Sumber'),
                             ]),
                     ]),
+                Livewire::make(OrderRankTrendChart::class, fn (ProductionOrder $record): array => ['record' => $record])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -262,9 +269,11 @@ class ProductionOrderResource extends Resource
                     ->label('Pelanggan')
                     ->searchable()
                     ->sortable(),
+                // Hidden by default so the table, with the Prioritas Utama label in the status cell, fits a 1366 pixel screen.
                 TextColumn::make('product.name')
                     ->label('Produk')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('quantity')
                     ->label('Jml')
                     ->suffix(' psg')
@@ -289,18 +298,26 @@ class ProductionOrderResource extends Resource
                     ->state(fn (ProductionOrder $record): string => $record->status === OrderStatus::Queued ? $record->waitingDays().' hari' : '-')
                     ->alignEnd()
                     ->toggleable(isToggledHiddenByDefault: true),
+                // The status badge, with a second badge under it for an order that carries the Prioritas Utama label.
+                // It lives in this cell so the label shows by default without making the table wider.
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn (OrderStatus $state): string => $state->label())
-                    ->color(fn (OrderStatus $state): string => $state->color())
+                    ->listWithLineBreaks()
+                    ->state(fn (ProductionOrder $record): array => array_values(array_filter([
+                        $record->status->label(),
+                        $record->priority === OrderPriority::Top ? OrderPriority::Top->label() : null,
+                    ])))
+                    ->color(fn (string $state): string => $state === OrderPriority::Top->label()
+                        ? OrderPriority::Top->color()
+                        : (collect(OrderStatus::cases())->first(fn (OrderStatus $status): bool => $status->label() === $state)?->color() ?? 'gray'))
                     ->sortable(),
                 IconColumn::make('lock_type')
                     ->label('Kunci')
-                    ->icon(fn (LockType $state): ?Heroicon => $state->isLocked() ? Heroicon::LockClosed : null)
+                    ->icon(fn (ProductionOrder $record): ?Heroicon => $record->isLocked() ? Heroicon::LockClosed : null)
                     ->color(fn (LockType $state): string => $state === LockType::Manual ? 'warning' : 'gray')
                     ->tooltip(fn (ProductionOrder $record): ?string => $record->isLocked()
-                        ? $record->lock_type->label().($record->lock_reason ? ': '.$record->lock_reason : '')
+                        ? $record->lock_type->label().($record->lock_reason ? ': '.$record->lock_reason : '').($record->lock_until ? ', sampai '.$record->lock_until->format('d M Y') : '')
                         : null),
                 TextColumn::make('priority')
                     ->label('Prioritas')
@@ -323,6 +340,9 @@ class ProductionOrderResource extends Resource
                     ->label('Mendekati tenggat (3 hari)')
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->nearDeadline()),
+                SelectFilter::make('priority')
+                    ->label('Prioritas')
+                    ->options(collect(OrderPriority::cases())->mapWithKeys(fn (OrderPriority $priority): array => [$priority->value => $priority->label()])->all()),
                 Filter::make('locked')
                     ->label('Terkunci')
                     ->toggle()
@@ -333,6 +353,8 @@ class ProductionOrderResource extends Resource
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()->label('Ubah'),
+                    OrderLockActions::lock(),
+                    OrderLockActions::unlock(),
                     Action::make('changeStatus')
                         ->label('Ubah status')
                         ->icon(Heroicon::OutlinedArrowPath)

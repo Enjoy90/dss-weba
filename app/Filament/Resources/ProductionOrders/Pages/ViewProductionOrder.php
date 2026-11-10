@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProductionOrders\Pages;
 
+use App\Filament\Actions\OrderLockActions;
 use App\Filament\Resources\ProductionOrders\ProductionOrderResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -13,6 +14,8 @@ class ViewProductionOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            OrderLockActions::lock(),
+            OrderLockActions::unlock(),
             EditAction::make()->label('Ubah'),
         ];
     }

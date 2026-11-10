@@ -30,10 +30,6 @@ use Illuminate\Support\Facades\DB;
  */
 class EvaluationService
 {
-    public const DEFAULT_MAX_WAIT_DAYS = 7;
-
-    public const DEFAULT_TOP_N = 5;
-
     private const INSERT_CHUNK = 200;
 
     public function __construct(
@@ -125,9 +121,9 @@ class EvaluationService
         return [
             'weight_mode' => CriterionWeights::mode(),
             'stale_value_days' => max(0, (int) Setting::get('stale_value_days', AssessmentResolver::DEFAULT_STALE_DAYS)),
-            'lock_in_progress' => filter_var(Setting::get('lock_in_progress', true), FILTER_VALIDATE_BOOLEAN),
-            'max_wait_days' => max(1, (int) Setting::get('max_wait_days', self::DEFAULT_MAX_WAIT_DAYS)),
-            'top_n_priority' => max(1, (int) Setting::get('top_n_priority', self::DEFAULT_TOP_N)),
+            'lock_in_progress' => EvaluationSettings::lockInProgress(),
+            'max_wait_days' => EvaluationSettings::maxWaitDays(),
+            'top_n_priority' => EvaluationSettings::topN(),
         ];
     }
 

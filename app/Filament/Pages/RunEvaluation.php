@@ -52,7 +52,7 @@ class RunEvaluation extends Page implements HasTable
 
     protected static string|UnitEnum|null $navigationGroup = 'Prioritas';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 4;
 
     protected ?EvaluationPreflight $preflightMemo = null;
 
@@ -278,7 +278,7 @@ class RunEvaluation extends Page implements HasTable
 
     protected function hasEarlierEvaluation(): bool
     {
-        return $this->hasEarlierMemo ??= Evaluation::query()->where('id', '<', $this->latest()?->id ?? 0)->exists();
+        return $this->hasEarlierMemo ??= $this->latest()?->hasEarlier() ?? false;
     }
 
     protected function changeLabel(EvaluationItem $item): string

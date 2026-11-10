@@ -11,18 +11,26 @@ class AssessmentFormatter
      */
     public static function raw(Criterion $criterion, ?float $value): string
     {
+        return self::withUnit($criterion->unit, $value);
+    }
+
+    /**
+     * The same as raw() for a unit that is not on a live criterion, for example one saved in an evaluation.
+     */
+    public static function withUnit(?string $unit, ?float $value): string
+    {
         if ($value === null) {
             return 'Belum diisi';
         }
 
         $number = self::number($value);
 
-        return match ($criterion->unit) {
+        return match ($unit) {
             'rupiah' => 'Rp '.self::number($value, 0),
             'persen' => $number.'%',
             'tingkat' => $number,
             null, '' => $number,
-            default => $number.' '.$criterion->unit,
+            default => $number.' '.$unit,
         };
     }
 

@@ -6,6 +6,7 @@ use App\Enums\LockType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Models\Concerns\LogsActivity;
+use App\Services\Evaluation\EvaluationSettings;
 use Carbon\CarbonInterface;
 use Database\Factories\ProductionOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -48,6 +49,10 @@ class ProductionOrder extends Model
             if (blank($order->created_by) && auth()->check()) {
                 $order->created_by = auth()->id();
             }
+        });
+
+        static::saving(function (self $order): void {
+            $order->syncLockWithStatus();
         });
 
         static::updating(function (self $order): void {
@@ -178,7 +183,15 @@ class ProductionOrder extends Model
      */
     public function scopeLocked(Builder $query): Builder
     {
-        return $query->where('lock_type', '!=', LockType::None->value);
+        return $query->where(function (Builder $query): void {
+            $query->where('lock_type', LockType::Auto->value)
+                ->orWhere(function (Builder $query): void {
+                    $query->where('lock_type', LockType::Manual->value)
+                        ->where(function (Builder $query): void {
+                            $query->whereNull('lock_until')->orWhereDate('lock_until', '>=', today());
+                        });
+                });
+        });
     }
 
     public function isLate(): bool
@@ -186,9 +199,65 @@ class ProductionOrder extends Model
         return $this->status->isOpen() && $this->deadline_date->lt(today());
     }
 
+    /**
+     * Locked today. A manual lock whose end date has passed no longer counts.
+     */
     public function isLocked(): bool
     {
-        return $this->lock_type->isLocked();
+        return $this->lockIsActive(today());
+    }
+
+    /**
+     * The lock follows the status (PRD F18): an order being worked on locks itself, and an order that
+     * is finished or canceled loses its lock and its Prioritas Utama label. Going back to Antri releases
+     * only the automatic lock, a manual one stays. Nothing happens while the setting for it is off.
+     */
+    protected function syncLockWithStatus(): void
+    {
+        if ($this->exists && ! $this->isDirty('status')) {
+            return;
+        }
+
+        if ($this->status === OrderStatus::InProgress) {
+            if (EvaluationSettings::lockInProgress()) {
+                $this->lock_type = LockType::Auto;
+                $this->locked_at = now();
+                $this->clearLockDetails(['lock_reason', 'locked_by', 'lock_until']);
+            }
+
+            return;
+        }
+
+        if (! $this->status->isOpen()) {
+            $this->releaseLockFields();
+            $this->priority = OrderPriority::Normal;
+
+            return;
+        }
+
+        if ($this->lock_type === LockType::Auto) {
+            $this->releaseLockFields();
+        }
+    }
+
+    protected function releaseLockFields(): void
+    {
+        $this->lock_type = LockType::None;
+        $this->clearLockDetails(['lock_reason', 'locked_by', 'locked_at', 'lock_until']);
+    }
+
+    /**
+     * Empties lock columns that hold something, so an unchanged empty column does not show up as a change.
+     *
+     * @param  array<int, string>  $columns
+     */
+    protected function clearLockDetails(array $columns): void
+    {
+        foreach ($columns as $column) {
+            if ($this->getAttribute($column) !== null) {
+                $this->setAttribute($column, null);
+            }
+        }
     }
 
     /**

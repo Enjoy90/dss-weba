@@ -33,6 +33,14 @@ class ProductionOrderPolicy
     }
 
     /**
+     * Putting on and taking off a manual lock is for the production manager and the leader (PRD F18).
+     */
+    public function lock(User $user, ProductionOrder $order): bool
+    {
+        return $user->isManager() || $user->isLeader();
+    }
+
+    /**
      * Importing and exporting order lists is for admin and the production manager (PRD F06).
      */
     public function import(User $user): bool
