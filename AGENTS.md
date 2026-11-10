@@ -10,7 +10,7 @@ Cara isi nilai kriteria adalah gabungan: tenggat, urgensi pelanggan, nilai order
 
 ## Teknologi
 
-PHP 8.3, Laravel 13, Filament 5, Livewire 4, Pest 4, Pint. Basis data MariaDB 10.4 atau MySQL 8 (kode harus jalan di keduanya). Impor dan ekspor Excel memakai OpenSpout yang sudah ikut Filament. Tidak ada paket tambahan, jangan menambah dependensi tanpa persetujuan.
+PHP 8.3, Laravel 13, Filament 5, Livewire 4, Pest 4, Pint. Basis data MariaDB 10.4 atau MySQL 8 (kode harus jalan di keduanya). Impor dan ekspor Excel memakai OpenSpout yang sudah ikut Filament. Laporan PDF memakai `barryvdh/laravel-dompdf` (satu-satunya paket tambahan, disetujui pemilik proyek di Fase 8). Jangan menambah dependensi lain tanpa persetujuan.
 
 ## Menjalankan
 
@@ -27,7 +27,7 @@ Butuh dua basis data kosong: `dss` dan `dss_test`. Akun demo (kata sandi `passwo
 
 ## Status
 
-Fase 0 sampai 7 dari 12 selesai, 52 dari 72 tugas, 417 tes lulus. Fase 8 (dasbor dan laporan) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
+Fase 0 sampai 8 dari 12 selesai, 58 dari 72 tugas, 482 tes lulus. Fase 9 (log, pengaturan, penjadwalan) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
 
 Yang sudah ada: masuk dan profil, pengguna, pelanggan, produk, order produksi, kriteria dengan bobot dan skala nilai, matriks penilaian, impor dan ekspor Excel, mesin SAW dan peringkat berkelompok, evaluasi tersimpan, halaman Jalankan Perhitungan (hanya Manajer), daftar dan rincian Hasil Evaluasi (tujuh tab), penyesuaian peringkat, alur ajukan, setujui, tolak, terapkan, label Prioritas Utama di daftar order, kunci manual dan kunci otomatis mengikuti status, bandingkan dua evaluasi, dan grafik tren peringkat di detail order. Yang belum ada: dasbor berisi grafik, laporan, halaman log, halaman pengaturan, evaluasi terjadwal, notifikasi, dan pemantauan order Tertahan.
 

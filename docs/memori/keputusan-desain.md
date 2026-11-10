@@ -75,6 +75,22 @@ Peringkat sistem murni dari skor. Peringkat akhir disusun tiga kelompok beruruta
 - Grafik tren (`OrderRankTrendChart`) berada di infolist halaman order, sumbu peringkat dibalik (peringkat 1 di atas), evaluasi Dibatalkan tidak ikut.
 - Notifikasi N1 sampai N10 dan pemantauan order Tertahan belum dibuat (Fase 8 dan 9).
 
+## Dasbor dan laporan (Fase 8)
+
+- Pustaka PDF: `barryvdh/laravel-dompdf` ^3.1, dipasang atas persetujuan pemilik proyek. Excel tetap OpenSpout.
+- Tertahan (PRD F18 butir 6): Antri, tidak terkunci, di luar N order Antri teratas pada K evaluasi terakhir berturut-turut, menunggu sedikitnya M hari. K (`held_after_evaluations`, bawaan 5) dan M (`held_min_days`, bawaan 4) dibaca dari `settings`, N adalah `top_n` tiap evaluasi. "N order Antri teratas" dihitung di antara order Antri pada saat evaluasi (status di `order_snapshot`), bukan dari peringkat akhir mentah, karena order terkunci dan Dikerjakan menempati peringkat atas dan akan membuat semua order Antri tertahan. Evaluasi Dibatalkan tidak dihitung. Kurang dari K evaluasi berarti tidak ada yang tertahan. Kode: `HeldOrders`.
+- Kartu Tertahan hanya menghitung order tertahan (sama dengan filter Tertahan di daftar order). Daftar di dasbor memuat tertahan dan dieskalasi dari evaluasi terbaru bukan Dibatalkan, dengan tertahan menang bila keduanya.
+- Enam kartu memakai scope yang sama dengan filternya (`DashboardFigures`), dan tiap kartu menaut ke daftar dengan filter menyala (`?filters[...]`). Penilaian belum lengkap menaut ke Penilaian Order, yang kini menerima `filters` dari URL.
+- Prioritas utama di dasbor: order berlabel dari evaluasi terakhir berstatus Diterapkan, urut peringkat evaluasi itu. Kolom Peringkat adalah peringkat akhir evaluasi (bisa mulai dari 7 karena order terkunci di atasnya).
+- Dasbor menurut peran: bagian Menunggu persetujuan hanya Pimpinan, tombol Jalankan Perhitungan hanya Manajer (`RunEvaluation::canAccess()`), Admin dan Supervisor hanya melihat. Tidak ada rupiah di dasbor.
+- Laporan: satu halaman `Reports` untuk lima jenis, semua peran boleh (PRD Bab 9). Semua laporan dibangun `ReportBuilder` menjadi `ReportDocument` (judul, keterangan, tabel bernilai mentah). Layar, PDF, dan Excel menggambar dokumen yang sama. Tidak ada rupiah di laporan, kecuali nilai asli C6 pada rincian perhitungan, yang disembunyikan dari Supervisor (aturan yang sama dengan tab hasil evaluasi).
+- Excel menyimpan angka dan tanggal sungguhan (bukan teks) dengan format tampilan, satu sheet per tabel dan sheet Ringkasan berisi kop. Rincian perhitungan memuat tabel Bobot dan pembagi (bobot dan skala tertinggi per kriteria) supaya skor bisa dihitung ulang. PDF A4 mendatar dengan kop, judul kolom berulang di tiap halaman, nomor halaman, dan dua kolom tanda tangan: Dibuat oleh (pencetak) dan Diketahui oleh (Pimpinan). Kuesioner H6 tidak ada di berkas proyek.
+- Pratinjau layar membatasi 50 baris pertama per tabel dengan catatan, berkas memuat semua baris.
+- Periode: Order terlambat memakai tenggat (hanya order terbuka yang sudah lewat tenggat saat dicetak), Rekap order memakai tanggal masuk, Riwayat evaluasi memakai waktu hitung. Bawaan periode: awal bulan ini sampai hari ini. Periode terbalik ditolak dengan kalimat di pratinjau.
+- Kop dari `Setting`: `company_name` (bawaan PT Weba International), `company_address`, `company_phone`, `company_logo` (jalur di disk public). Alamat atau telepon kosong tidak ditampilkan. Halaman pengaturan dan unggah logo ada di Fase 9.
+- `DemoEvaluationSeeder` tidak ikut seed bawaan: lima evaluasi pada lima hari yang disetujui dan diterapkan, dijalankan manual agar dasbor terisi dan keadaan kosong Bab 8 dan 9 tetap bisa dipelajari.
+- Widget dasbor tidak lazy dan dasbor bawaan Filament diganti kelas `Dashboard` sendiri. Widget sambutan dihapus.
+
 ## Hak akses
 
 Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
@@ -94,7 +110,7 @@ Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer P
 
 ## Sengaja belum dibuat atau ditunda
 
-- Pemantauan order Tertahan (Fase 8 dan 9), opsi "wajib lengkap", notifikasi (termasuk N1 sampai N10), dan evaluasi terjadwal belum ada. Pengaturan `approval_required`, `top_n_priority`, `max_wait_days`, dan `lock_in_progress` belum punya halaman, nilainya bawaan dari kode sampai P9-02.
+- Opsi "wajib lengkap", notifikasi (termasuk N1 sampai N10), dan evaluasi terjadwal belum ada. Pengaturan `approval_required`, `top_n_priority`, `max_wait_days`, dan `lock_in_progress` belum punya halaman, nilainya bawaan dari kode sampai P9-02.
 - Kunci otomatis tetap ditampilkan walau `lock_in_progress` dimatikan, sedangkan mesin evaluasi mengabaikannya. Itu baru relevan setelah halaman pengaturan ada.
 - Tabel `activity_logs` dan `settings` dimajukan dari Fase 9 dengan isi minimal. Halaman log (P9-01) dan halaman pengaturan (P9-02) belum ada. `stale_value_days`, `max_wait_days`, `lock_in_progress`, dan `top_n_priority` dibaca dari tabel `settings` dengan bawaan di kode.
 - Kolom peringkat terakhir di daftar order belum ada. Grafik tren sudah ada di detail order.

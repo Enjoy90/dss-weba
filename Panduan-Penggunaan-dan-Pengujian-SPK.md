@@ -3,9 +3,9 @@
 | Informasi | Isi |
 |---|---|
 | Aplikasi | SPK Prioritas Produksi (studi kasus PT Weba International) |
-| Versi dokumen | 1.5 |
-| Tanggal | 8 November 2026 |
-| Cakupan | Fase 0 sampai Fase 7: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order |
+| Versi dokumen | 1.6 |
+| Tanggal | 10 November 2026 |
+| Cakupan | Fase 0 sampai Fase 8: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order, dasbor, order tertahan, dan laporan PDF serta Excel |
 | Alamat lokal | http://localhost:8001/admin |
 
 ## 1. Tentang Dokumen Ini
@@ -23,7 +23,7 @@ Setiap pengujian ditulis dengan urutan yang sama.
 1. **Tujuan** menjelaskan apa yang sedang dibuktikan.
 2. **Masuk sebagai** menyebut akun yang dipakai.
 3. **Langkah** adalah urutan klik yang harus diikuti, satu per satu.
-4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 11.
+4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 12.
 
 Kerjakan pengujian berurutan dari atas. Beberapa pengujian mengubah data, misalnya menonaktifkan akun. Di bagian itu ada petunjuk untuk mengembalikannya. Bila data sudah terlanjur berantakan, data demo bisa dibuat ulang seperti di Bagian 2.2.
 
@@ -40,7 +40,7 @@ Semua akun memakai kata sandi `password`.
 
 Supaya tidak bingung saat mencoba, berikut hal yang memang belum dibuat dan baru hadir di fase berikutnya.
 
-- Dasbor masih berisi sapaan saja. Kartu angka dan grafik dibuat di Fase 8.
+- Profil perusahaan untuk kop laporan (nama, alamat, telepon, logo) belum punya halaman pengaturan. Kop memakai nama bawaan PT Weba International, dan alamat serta telepon baru muncul setelah halaman pengaturan dibuat di Fase 9 (Uji 8.9 menunjukkan cara mengisinya lewat perintah).
 - Pengaturan sistem (persetujuan Pimpinan wajib atau tidak, jumlah Prioritas Utama, batas tunggu 7 hari, kunci otomatis) belum punya halaman. Semuanya memakai nilai bawaan. Halamannya dibuat di Fase 9.
 - Notifikasi (lonceng) dan evaluasi terjadwal baru ada di Fase 9.
 - Halaman log aktivitas lengkap baru ada di Fase 9. Yang sudah ada hanya riwayat perubahan di halaman detail order.
@@ -68,7 +68,7 @@ Langkah ini membuat semua tabel dari awal dan mengisinya dengan data contoh: emp
 php artisan migrate:fresh --seed
 ```
 
-**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 11.
+**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 12.
 
 Tanggal pada order demo dibuat relatif terhadap hari ini. Jadi beberapa order selalu terlambat dan beberapa selalu hampir jatuh tempo, kapan pun data dibuat. Nilai manual penilaian juga dibuat dengan usia yang berbeda, ada yang baru dan ada yang sudah lima hari.
 
@@ -93,7 +93,7 @@ php artisan serve --port=8001
 
 3. Isi email `admin@spk.test` dan kata sandi `password`, lalu klik **Masuk**.
 
-**Hasil yang diharapkan:** Anda masuk ke halaman **Dasbor** dan melihat sapaan "Selamat Datang" beserta nama Anda.
+**Hasil yang diharapkan:** Anda masuk ke halaman **Dasbor** dan melihat enam kartu angka order. Inisial nama Anda tampil di lingkaran pojok kanan atas.
 
 ![Dasbor Admin](03-dasbor-admin.png)
 
@@ -115,7 +115,7 @@ Bab ini membuktikan bahwa hanya orang yang berhak yang bisa masuk, dan bahwa Adm
 2. Isi email `manajer@spk.test` dan kata sandi `password`.
 3. Klik **Masuk**.
 
-**Hasil yang diharapkan:** halaman Dasbor terbuka dan sapaan memuat nama "Budi Santoso". Menu di sebelah kiri berisi Dasbor, Order Produksi, Pelanggan, dan Produk.
+**Hasil yang diharapkan:** halaman Dasbor terbuka dan inisial "BS" (Budi Santoso) tampil di pojok kanan atas. Menu di sebelah kiri berisi Dasbor, Produksi, Prioritas, Data Master, dan Laporan.
 
 ### 3.2 Uji 1.2: Masuk dengan kata sandi yang salah
 
@@ -1286,11 +1286,269 @@ Order yang diimpor dari Excel dengan status Dikerjakan juga langsung terkunci ot
 
 **Mengembalikan data:** buat ulang data demo seperti di Bagian 2.2. Evaluasi, label, dan kunci yang dibuat ikut terhapus oleh perintah itu.
 
-## 10. Menjalankan Pengujian Otomatis
+## 10. Fase 8: Dasbor dan Laporan
+
+Bab ini membuktikan bahwa dasbor menampilkan kondisi order dengan angka yang sama dengan daftar aslinya, bahwa order yang berulang kali tertinggal dari daftar prioritas ketahuan (order **Tertahan**), dan bahwa hasil perhitungan bisa dicetak atau diunduh sebagai laporan PDF dan Excel dengan angka yang sama dengan layar.
+
+Dasbor adalah halaman pertama setelah masuk. Menu **Laporan** ada di grup **Laporan** dan bisa dibuka semua peran.
+
+### 10.1 Menyiapkan data dan istilah baru
+
+Dasbor paling berguna bila sudah ada riwayat evaluasi. Data demo bawaan sengaja tidak memuat evaluasi, supaya Bab 8 dan Bab 9 bisa dipelajari dari keadaan kosong. Untuk bab ini, isi riwayatnya dengan perintah tambahan berikut (jalankan sesudah `php artisan migrate:fresh --seed`).
+
+```
+php artisan db:seed --class=DemoEvaluationSeeder
+```
+
+**Hasil yang diharapkan:** seeder berstatus DONE. Isinya lima evaluasi pada lima hari berturut-turut, masing-masing sudah disetujui dan diterapkan. Perintah ini aman diulang hanya setelah data dibuat ulang dengan `migrate:fresh --seed`.
+
+Tiga istilah baru dipakai di bab ini.
+
+| Istilah | Arti |
+|---|---|
+| Tertahan | Order Antri yang tidak terkunci, berada di luar 5 order Antri teratas pada 5 evaluasi terakhir berturut-turut, dan sudah menunggu sedikitnya 4 hari. Peringatan ini muncul sebelum order mencapai batas tunggu 7 hari |
+| Dieskalasi | Order Antri yang menunggu lebih dari 7 hari sehingga naik di atas order biasa pada evaluasi terakhir (Bab 8) |
+| Prioritas utama (dasbor) | Order berlabel Prioritas Utama dari evaluasi terakhir yang diterapkan, urut menurut peringkat evaluasi itu |
+
+"5 order Antri teratas" dihitung di antara order Antri saja, sama dengan aturan label Prioritas Utama: order yang sedang Dikerjakan tidak memakai tempat. Evaluasi yang Dibatalkan tidak dihitung, dan selama evaluasi belum mencapai 5 kali tidak ada order yang Tertahan. Angka 5 dan 4 adalah nilai bawaan, halaman pengaturannya dibuat di Fase 9.
+
+### 10.2 Uji 8.1: Membaca dasbor
+
+**Tujuan:** melihat kondisi order dan prioritas dalam satu layar.
+**Masuk sebagai:** Manajer (`manajer@spk.test`), dengan data demo dan riwayat evaluasi dari Bagian 10.1.
+
+1. Masuk, atau klik **Dasbor** di menu kiri.
+
+![Dasbor Manajer](80-dasbor-manajer.png)
+
+**Hasil yang diharapkan:** halaman Dasbor berisi, dari atas ke bawah:
+
+- **Enam kartu angka:** Order aktif 21, Terlambat 3, Mendekati tenggat 2, Penilaian belum lengkap 4, Terkunci 7, dan Tertahan 1.
+- **Perhitungan terakhir:** status evaluasi terbaru beserta waktu dan jumlah ordernya, tautan **Buka hasil**, dan tombol biru **Jalankan Perhitungan**.
+- **Order per status:** grafik batang Antri 15, Dikerjakan 6, Selesai 3, dan Dibatalkan 1. Warna batang sama dengan warna lencana status di daftar order.
+- **Prioritas utama:** lima order berlabel dari evaluasi terakhir yang diterapkan, lengkap dengan peringkat, tenggat, skor, dan status.
+- **Order terlambat terlama:** tiga order terlambat, yang paling lama lewat tenggat di atas (ORD-2026-0013, terlambat 6 hari).
+- **Order tertahan dan dieskalasi:** enam order Antri dari yang paling lama menunggu. Lima bertanda **Dieskalasi** dan satu bertanda **Tertahan** (ORD-2026-0018).
+
+2. Arahkan penunjuk ke tanda **Tertahan** atau **Dieskalasi**.
+
+**Hasil yang diharapkan:** muncul penjelasan singkat. Untuk Tertahan: "Di luar 5 teratas pada 5 evaluasi berturut-turut". Untuk Dieskalasi: "Menunggu lebih dari 7 hari, naik di atas order biasa pada evaluasi terakhir".
+
+Kolom **Peringkat** pada daftar prioritas utama adalah peringkat akhir di evaluasi, jadi angkanya tidak harus 1 sampai 5: tujuh order teratas dalam data demo terkunci, dan label baru jatuh ke order Antri berikutnya (peringkat 7 sampai 11).
+
+### 10.3 Uji 8.2: Kartu membuka daftar yang sama
+
+**Tujuan:** memastikan angka di kartu sama dengan jumlah baris pada daftar yang dibuka.
+**Masuk sebagai:** Manajer.
+
+1. Di Dasbor, klik kartu **Terlambat**.
+
+**Hasil yang diharapkan:** daftar Order Produksi terbuka dengan filter **Terlambat** menyala dan menampilkan 3 hasil, sama dengan angka di kartu.
+
+2. Kembali ke Dasbor, lalu klik kartu **Terkunci**, **Mendekati tenggat**, dan **Order aktif** bergantian.
+
+**Hasil yang diharapkan:** daftar menampilkan 7, 2, dan 21 hasil. Kartu Order aktif membuka daftar dengan filter Status Antri dan Dikerjakan.
+
+3. Kembali ke Dasbor, klik kartu **Penilaian belum lengkap**.
+
+![Penilaian Order dengan filter Belum lengkap](81-dasbor-kartu-penilaian.png)
+
+**Hasil yang diharapkan:** halaman **Penilaian Order** terbuka dengan filter **Belum lengkap** menyala dan menampilkan 4 order, sama dengan kartu.
+
+### 10.4 Uji 8.3: Order tertahan
+
+**Tujuan:** melihat order yang berulang kali tertinggal dari daftar prioritas.
+**Masuk sebagai:** Manajer.
+
+1. Di Dasbor, klik kartu **Tertahan**.
+
+![Daftar order dengan filter Tertahan](82-order-tertahan.png)
+
+**Hasil yang diharapkan:** daftar Order Produksi dengan filter **Tertahan** menyala menampilkan satu order, ORD-2026-0018 (Koperasi Seragam Sekolah Mekar).
+
+2. Buka panel filter lewat ikon corong, lalu matikan **Tertahan**. Cari ORD-2026-0018 dan buka halamannya.
+
+**Hasil yang diharapkan:** grafik **Tren peringkat** memuat lima titik, satu untuk tiap evaluasi, dan semuanya berada di luar lima peringkat teratas (Bab 9). Kartu Tertahan hanya menghitung order yang memenuhi aturan di Bagian 10.1, sedangkan daftar di Dasbor juga memuat order yang dieskalasi.
+
+3. Beri order itu kunci manual dengan alasan (Uji 7.6), lalu buka Dasbor.
+
+**Hasil yang diharapkan:** kartu Tertahan menjadi 0, karena order terkunci tidak lagi tertahan. Lepas kuncinya untuk mengembalikan keadaan.
+
+4. Ubah status ORD-2026-0018 menjadi **Dikerjakan**, lalu buka Dasbor.
+
+**Hasil yang diharapkan:** order itu hilang dari daftar tertahan dan dieskalasi, karena hanya order Antri yang dihitung.
+
+**Mengembalikan data:** buat ulang data demo dan jalankan lagi seeder riwayat evaluasi (Bagian 10.1).
+
+### 10.5 Uji 8.4: Dasbor menurut peran
+
+**Tujuan:** memastikan tiap peran melihat isi yang sesuai.
+
+1. Masuk sebagai **Manajer**, buka **Jalankan Perhitungan**, hitung, lalu buka hasilnya dan klik **Ajukan untuk disetujui** (Uji 7.4). Keluar.
+2. Masuk sebagai **Pimpinan** (`pimpinan@spk.test`).
+
+![Dasbor Pimpinan](86-dasbor-pimpinan.png)
+
+**Hasil yang diharapkan:** di bawah kartu muncul bagian **Menunggu persetujuan Anda** yang memuat evaluasi yang baru diajukan, lengkap dengan waktu pengajuan, jumlah order, dan jumlah Prioritas Utama. Mengklik barisnya membuka rincian evaluasi untuk disetujui. Tombol **Jalankan Perhitungan** tidak ada di Dasbor maupun di menu.
+
+3. Masuk sebagai **Supervisor** (`supervisor@spk.test`) dan **Admin** (`admin@spk.test`).
+
+![Dasbor Supervisor](16-dasbor-supervisor.png)
+
+**Hasil yang diharapkan:** kedua peran melihat kartu, grafik, dan daftar yang sama dengan Manajer, tetapi tanpa tombol **Jalankan Perhitungan** dan tanpa bagian Menunggu persetujuan. Tidak ada satu pun angka rupiah di Dasbor, jadi Supervisor tidak melihat nilai order.
+
+![Dasbor Admin](03-dasbor-admin.png)
+
+4. Masuk sebagai Manajer lagi dan buka Dasbor.
+
+**Hasil yang diharapkan:** bagian **Perhitungan terakhir** menampilkan status **Diajukan**, dan hanya Manajer yang melihat tombol **Jalankan Perhitungan**.
+
+### 10.6 Uji 8.5: Membuka laporan dan membaca pratinjau
+
+**Tujuan:** memilih laporan dan memeriksa isinya sebelum diunduh.
+**Masuk sebagai:** Manajer.
+
+1. Buka menu **Laporan** (grup **Laporan**).
+
+![Halaman Laporan](83-laporan-peringkat.png)
+
+**Hasil yang diharapkan:** halaman Laporan memuat kolom **Jenis laporan** yang sudah berisi *Peringkat prioritas (per evaluasi)*, kolom **Evaluasi** berisi evaluasi terbaru, dan bagian **Pratinjau** dengan nama perusahaan, judul laporan, keterangan evaluasi (waktu, pemicu, status, jumlah order, siapa yang menghitung dan menyetujui), tabel peringkat, dan tabel kriteria dan bobot. Tombol **Unduh PDF** dan **Unduh Excel** ada di kanan atas.
+
+2. Buka daftar **Jenis laporan**.
+
+**Hasil yang diharapkan:** ada lima pilihan: Peringkat prioritas, Rincian perhitungan SAW, Order terlambat, Rekap order, dan Riwayat evaluasi. Dua pilihan pertama meminta **Evaluasi**, tiga lainnya meminta periode **Dari tanggal** dan **Sampai tanggal** (awalnya awal bulan ini sampai hari ini).
+
+3. Bila tabel lebih dari 50 baris, lihat catatan di bawah tabel.
+
+**Hasil yang diharapkan:** pratinjau hanya menampilkan 50 baris pertama dan memberi catatan "Menampilkan 50 baris pertama dari ...". Berkas PDF dan Excel selalu memuat semua baris.
+
+### 10.7 Uji 8.6: Mengunduh laporan peringkat
+
+**Tujuan:** memastikan PDF dan Excel memuat angka yang sama dengan layar.
+**Masuk sebagai:** Manajer.
+
+1. Pada laporan **Peringkat prioritas**, klik **Unduh PDF**.
+
+**Hasil yang diharapkan:** peramban mengunduh berkas `laporan-peringkat-evaluasi-<nomor>-<tanggal>-<jam>.pdf`. Buka berkas itu.
+
+![PDF laporan peringkat](89-pdf-peringkat.png)
+
+PDF berukuran A4 mendatar. Di bagian atas ada **kop**: nama perusahaan dengan garis di bawahnya, lalu judul laporan, keterangan evaluasi, **Tanggal cetak**, dan **Dicetak oleh**. Tabel berisi Peringkat, Order, Pelanggan, Produk, Tenggat, Kelompok, Skor (empat desimal), Peringkat sistem, dan Alasan penyesuaian. Judul kolom diulang di tiap halaman dan nomor halaman ada di pojok kanan bawah.
+
+2. Gulir ke halaman terakhir.
+
+![Kolom tanda tangan](90-pdf-tanda-tangan.png)
+
+**Hasil yang diharapkan:** di akhir ada dua kolom tanda tangan: **Dibuat oleh** (nama pencetak) dan **Diketahui oleh** (Pimpinan), dengan ruang kosong untuk tanda tangan.
+
+3. Klik **Unduh Excel** dan buka berkas `.xlsx`-nya.
+
+**Hasil yang diharapkan:** ada tiga lembar. **Ringkasan** memuat nama perusahaan, judul, keterangan evaluasi, tanggal cetak, dan nama pencetak. **Peringkat prioritas** memuat tabel yang sama dengan PDF, dan **Kriteria dan bobot** memuat daftar kriteria. Peringkat dan jumlah tertulis sebagai angka, skor sebagai angka dengan format empat desimal, dan tenggat sebagai tanggal sungguhan, jadi bisa diurutkan dan dihitung.
+
+4. Bandingkan skor tiga order teratas di layar, PDF, dan Excel.
+
+**Hasil yang diharapkan:** ORD-2026-0005 bernilai 0,8740, ORD-2026-0009 bernilai 0,8110, dan ORD-2026-0007 bernilai 0,7728 di ketiganya.
+
+### 10.8 Uji 8.7: Rincian perhitungan dan hitung ulang manual
+
+**Tujuan:** membuktikan bahwa skor bisa dihitung ulang dari angka di Excel.
+**Masuk sebagai:** Manajer.
+
+1. Pilih **Rincian perhitungan SAW (per evaluasi)**.
+
+![Pratinjau rincian perhitungan](84-laporan-rincian.png)
+
+**Hasil yang diharapkan:** pratinjau memuat enam tabel: Kriteria dan skala, Bobot dan pembagi, Nilai asli, Nilai skala 1 sampai 5, Nilai normalisasi, dan Nilai terbobot dan skor.
+
+2. Klik **Unduh PDF**, lalu buka halaman yang memuat tabel *Nilai terbobot dan skor*.
+
+![Tabel nilai terbobot di PDF](91-pdf-rincian-terbobot.png)
+
+**Hasil yang diharapkan:** PDF terdiri dari lima halaman A4 mendatar. Tabel terakhir memuat satu kolom per kriteria (judulnya berisi bobotnya) dan kolom **Skor V** di paling kanan.
+
+3. Klik **Unduh Excel** dan buka lembar **Bobot dan pembagi**.
+
+**Hasil yang diharapkan:** tujuh baris kriteria berisi bobot dan nilai skala tertinggi: C1 0,27 dan 5, C2 0,18 dan 5, C3 0,135 dan 5, C4 0,135 dan 4, C5 0,09 dan 5, C6 0,09 dan 4, C7 0,10 dan 5. Di bawahnya ada rumusnya: nilai normalisasi adalah nilai skala dibagi nilai skala tertinggi kolomnya, dan Skor V adalah jumlah bobot kali nilai normalisasi.
+
+4. Hitung ulang order peringkat 1 (ORD-2026-0005) dengan tangan memakai lembar **Nilai skala 1 sampai 5**.
+
+**Hasil yang diharapkan:** C1 bernilai skala 3, jadi normalisasinya 3 dibagi 5 sama dengan 0,6 dan nilai terbobotnya 0,27 kali 0,6 sama dengan 0,162. Bila keenam kriteria lain dijumlahkan dengan cara yang sama, hasilnya 0,8740, sama dengan kolom **Skor V** di lembar **Nilai terbobot dan skor** dan sama dengan skor di layar.
+
+### 10.9 Uji 8.8: Laporan periode
+
+**Tujuan:** memastikan filter periode bekerja untuk laporan order dan riwayat.
+**Masuk sebagai:** Manajer.
+
+1. Pilih **Order terlambat (per periode)**. Periodenya awal bulan ini sampai hari ini.
+
+**Hasil yang diharapkan:** tabel memuat tiga order terlambat (ORD-2026-0013 terlambat 6 hari, ORD-2026-0011 terlambat 3 hari, ORD-2026-0012 terlambat 1 hari). Di atasnya tertulis **Jumlah order terlambat** 3 dan **Rata-rata keterlambatan** 3,3 hari. Periode laporan ini mengacu pada tenggat, dan hanya order yang belum selesai dan sudah lewat tenggat pada hari cetak yang masuk.
+
+2. Klik **Unduh PDF**.
+
+![PDF laporan order terlambat](92-pdf-terlambat.png)
+
+**Hasil yang diharapkan:** satu halaman dengan kop, ketiga order, dan kolom tanda tangan.
+
+3. Pilih **Rekap order (per periode)**.
+
+![Rekap order](87-laporan-rekap.png)
+
+**Hasil yang diharapkan:** dua tabel: **Rekap per status** (Antri 11 order dan 3.505 pasang, Dikerjakan 4 order dan 880 pasang, total 15 order dan 4.385 pasang) dan **Rekap per pelanggan** dengan jumlah order tiap status. Periode rekap mengacu pada **tanggal masuk** order, jadi tiga order Selesai dan satu Dibatalkan (yang masuk lebih dari 10 hari lalu) tidak ikut. Baris **Total** tampil tebal.
+
+4. Pilih **Riwayat evaluasi (per periode)**.
+
+**Hasil yang diharapkan:** daftar evaluasi pada periode itu, yang terbaru di atas, dengan waktu hitung, pemicu, status, jumlah order, jumlah Prioritas Utama, siapa yang menghitung dan menyetujui, dan waktu penerapan. Dalam data demo ada enam baris (lima diterapkan dan satu diajukan).
+
+5. Ubah **Dari tanggal** menjadi tanggal sesudah **Sampai tanggal**.
+
+![Periode terbalik ditolak](88-laporan-periode-terbalik.png)
+
+**Hasil yang diharapkan:** pratinjau diganti kalimat "Tanggal akhir tidak boleh sebelum tanggal awal", dan tombol Unduh tidak menghasilkan berkas apa pun.
+
+6. Pilih periode lama yang tidak memuat data, misalnya satu tahun lalu.
+
+**Hasil yang diharapkan:** pratinjau berisi kalimat keadaan kosong seperti "Tidak ada order terlambat dengan tenggat pada periode ini", dan PDF yang diunduh tetap berisi kop serta kalimat itu.
+
+### 10.10 Uji 8.9: Kop dari profil perusahaan
+
+**Tujuan:** memastikan kop laporan mengikuti profil perusahaan.
+**Masuk sebagai:** Manajer.
+
+Halaman pengaturan profil perusahaan baru dibuat di Fase 9. Sementara itu, nilainya bisa diisi lewat perintah berikut di terminal folder `dss`.
+
+```
+php artisan tinker --execute="App\Models\Setting::put('company_address', 'Jl. Industri Sepatu No. 12, Sidoarjo, Jawa Timur'); App\Models\Setting::put('company_phone', '031-5550100');"
+```
+
+1. Unduh laporan PDF apa pun.
+
+**Hasil yang diharapkan:** di bawah nama perusahaan muncul dua baris kecil: alamat dan "Telepon 031-5550100" (lihat gambar di Uji 8.6). Sebelum perintah dijalankan, kop hanya memuat nama **PT Weba International**, yaitu nama bawaan. Nama bisa diganti dengan kunci `company_name`. Alamat atau telepon yang kosong tidak ditampilkan sama sekali.
+
+**Mengembalikan data:** hapus nilai itu dengan `php artisan tinker --execute="App\Models\Setting::whereIn('key', ['company_address', 'company_phone'])->delete();"`, atau buat ulang data demo.
+
+### 10.11 Uji 8.10: Hak akses laporan dan dasbor
+
+**Tujuan:** memastikan semua peran bisa mengunduh laporan, dan Supervisor tidak melihat rupiah.
+
+1. Masuk sebagai **Admin**, **Supervisor**, dan **Pimpinan** bergantian. Buka **Laporan** dan unduh PDF dan Excel peringkat.
+
+**Hasil yang diharapkan:** keempat peran bisa membuka halaman Laporan dan mengunduh kedua berkas. Dicetak oleh selalu memuat nama pengguna yang sedang masuk.
+
+2. Masuk sebagai **Supervisor**, pilih **Rincian perhitungan SAW**, dan periksa tabelnya.
+
+**Hasil yang diharapkan:** tidak ada kolom C6 (Nilai order) di tabel mana pun dan tidak ada angka rupiah. Pimpinan, Manajer, dan Admin melihat kriteria C6 lengkap. Laporan lain (peringkat, order terlambat, rekap, riwayat) memang tidak memuat nilai rupiah untuk siapa pun.
+
+3. Buka `http://localhost:8001/admin/laporan` tanpa masuk.
+
+**Hasil yang diharapkan:** peramban diarahkan ke halaman masuk.
+
+**Mengembalikan data:** tidak ada yang berubah oleh uji ini, kecuali Uji 8.4 langkah 1 yang menambah satu evaluasi. Buat ulang data demo bila ingin mengulang dari awal.
+
+## 11. Menjalankan Pengujian Otomatis
 
 Selain diuji dengan tangan seperti di atas, aplikasi punya pengujian otomatis yang menjalankan ratusan pemeriksaan dalam hitungan detik. Pengujian ini memakai basis data terpisah bernama `dss_test`, jadi tidak menyentuh data demo Anda.
 
-### 10.1 Cara menjalankan
+### 11.1 Cara menjalankan
 
 1. Pastikan MySQL menyala dan basis data `dss_test` ada.
 2. Di terminal folder `dss`, jalankan perintah berikut.
@@ -1301,9 +1559,9 @@ php artisan test --compact
 
 3. Tunggu sekitar setengah menit.
 
-**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 417 tes dengan 2.249 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
+**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 482 tes dengan 2.721 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
 
-### 10.2 Apa saja yang diuji
+### 11.2 Apa saja yang diuji
 
 - **Masuk dan profil:** login berhasil dan gagal, akun nonaktif, batas lima percobaan, halaman yang tertutup bagi tamu, ganti nama dan kata sandi.
 - **Pengguna:** hak akses Admin, tambah, ubah, nonaktifkan, atur ulang kata sandi, serta aturan Admin terakhir dan larangan menonaktifkan diri sendiri.
@@ -1316,9 +1574,12 @@ php artisan test --compact
 - **Mesin SAW dan evaluasi:** contoh hitung spesifikasi (skor 0,8550, 0,7400, 0,7000 dan peringkat A, C, B), kasus khusus (satu order, nilai sama, nilai kosong, skor sama), pengelompokan peringkat dan contoh order lama yang dieskalasi, batas 7 dan 8 hari, kunci otomatis dan manual beserta kunci yang kedaluwarsa, pemeriksaan sebelum hitung, konfirmasi order belum lengkap, salinan kriteria dan pengaturan yang tidak ikut berubah, peringkat sebelumnya, evaluasi yang tidak bisa diubah atau dihapus, penyimpanan satu transaksi, kinerja 200 dan 1.000 order, serta hak akses halaman hitung.
 - **Hasil evaluasi dan persetujuan:** alur Draf, Diajukan, Disetujui, Diterapkan, dan Dibatalkan beserta peran yang berhak di tiap langkah, penolakan wajib bercatatan, hanya evaluasi terbaru yang bisa diterapkan, label Prioritas Utama untuk N order Antri teratas dan tidak untuk order Dikerjakan (enam order Dikerjakan dan N sama dengan 5 tetap memberi label ke lima order Antri), peringatan slot penuh, penyesuaian peringkat dengan alasan wajib dan larangan menurunkan order terkunci di bawah order biasa, bandingkan dua evaluasi, grafik tren, serta kriteria nilai order yang disembunyikan dari Supervisor.
 - **Kunci order:** kunci manual dengan alasan wajib, tanggal berakhir, satu baris log untuk tiap pasang dan lepas, kunci otomatis yang mengikuti status (termasuk order hasil impor), pelepasan saat Selesai atau Dibatalkan, dan hak akses Manajer serta Pimpinan.
+- **Dasbor:** enam kartu angka yang sama dengan hasil filter di daftar asalnya (termasuk tautan tiap kartu), daftar order terlambat terlama, daftar prioritas utama dari evaluasi terakhir yang diterapkan, grafik order per status, bagian persetujuan yang hanya tampil untuk Pimpinan, tombol hitung yang hanya tampil untuk Manajer, serta dasbor tanpa rupiah untuk Supervisor.
+- **Order tertahan:** aturan lima evaluasi berturut-turut di luar lima order Antri teratas dan menunggu empat hari, evaluasi dibatalkan yang tidak dihitung, order Dikerjakan yang tidak memakai tempat, order terkunci atau tidak lagi Antri yang tidak tertahan, pengaturan jumlah evaluasi dan hari, daftar tertahan dan dieskalasi di dasbor, serta filter Tertahan di daftar order.
+- **Laporan:** lima laporan (peringkat, rincian perhitungan, order terlambat, rekap order, riwayat evaluasi) dengan batas periode yang tepat, kop dari pengaturan perusahaan, angka Excel dan PDF yang sama dengan layar, Excel dengan angka dan tanggal sungguhan, skor yang bisa dihitung ulang dari lembar Excel, nama lembar yang valid, teks data yang diloloskan di PDF, periode terbalik ditolak, laporan kosong, kriteria nilai order yang disembunyikan dari Supervisor, dan kinerja laporan 200 dan 1.000 order.
 - **Data demo:** jumlah dan sebaran data, kriteria awal dan skalanya, nilai penilaian demo, dan setiap halaman terbuka tanpa kosong untuk keempat peran.
 
-### 10.3 Menjalankan sebagian tes
+### 11.3 Menjalankan sebagian tes
 
 Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama tes, misalnya:
 
@@ -1326,7 +1587,7 @@ Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama te
 php artisan test --compact --filter="order"
 ```
 
-## 11. Jika Ada Masalah
+## 12. Jika Ada Masalah
 
 **Halaman tidak bisa dibuka atau muncul "gagal terhubung".** Pastikan perintah `php artisan serve --port=8001` masih berjalan di terminal dan alamatnya `http://localhost:8001/admin`.
 
@@ -1350,13 +1611,19 @@ php artisan test --compact --filter="order"
 
 **Tombol Jalankan Perhitungan pudar dan tidak bisa ditekan.** Baca tulisan merah di bagian Kesiapan data. Penyebabnya total bobot belum 100%, skala nilai sebuah kriteria belum lengkap, atau belum ada order Antri atau Dikerjakan.
 
+**Daftar Prioritas utama atau Order tertahan di Dasbor kosong.** Daftar prioritas utama terisi setelah sebuah evaluasi diterapkan, dan order baru bisa Tertahan setelah lima evaluasi berturut-turut. Untuk data demo, jalankan `php artisan db:seed --class=DemoEvaluationSeeder` (Bagian 10.1).
+
+**Unduhan laporan tidak muncul.** Pastikan jenis laporan, evaluasi atau periode sudah terisi. Bila pratinjau berisi kalimat seperti "Tanggal akhir tidak boleh sebelum tanggal awal", perbaiki isian itu lebih dulu karena tombol Unduh tidak menghasilkan apa pun selama pilihannya belum lengkap.
+
+**PDF laporan terlalu lama dibuat.** Laporan rincian perhitungan dengan ratusan order menghasilkan banyak halaman dan butuh beberapa detik. Unduh versi Excel bila hanya angkanya yang dibutuhkan.
+
 **Tombol Impor sekarang tidak muncul.** Tombol itu baru tampil setelah Periksa berkas dan hanya bila ada sedikitnya satu baris yang benar.
 
 **Tes otomatis gagal terhubung.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala.
 
-## 12. Lampiran: Ringkasan Hak Akses
+## 13. Lampiran: Ringkasan Hak Akses
 
-Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 7.
+Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 8.
 
 | Kegiatan | Admin | Manajer | Supervisor | Pimpinan |
 |---|---|---|---|---|
@@ -1381,4 +1648,9 @@ Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 7.
 | Sesuaikan peringkat, terapkan prioritas, batalkan evaluasi | Tidak | Ya | Tidak | Ya |
 | Pasang dan lepas kunci manual order | Tidak | Ya | Tidak | Ya |
 | Lihat kriteria nilai order (rupiah) di hasil evaluasi | Ya | Ya | Tidak | Ya |
+| Lihat dasbor | Ya | Ya | Ya | Ya |
+| Jalankan Perhitungan dari tombol di dasbor | Tidak | Ya | Tidak | Tidak |
+| Lihat bagian Menunggu persetujuan di dasbor | Tidak | Tidak | Tidak | Ya |
+| Lihat order tertahan | Ya | Ya | Ya | Ya |
+| Unduh laporan PDF dan Excel | Ya | Ya | Ya | Ya |
 | Ganti nama dan kata sandi sendiri | Ya | Ya | Ya | Ya |
