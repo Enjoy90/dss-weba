@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ImportMode;
+use App\Enums\LockType;
 use App\Enums\OrderStatus;
 use App\Models\ActivityLog;
 use App\Models\Assessment;
@@ -220,6 +221,22 @@ it('maps the status by its label or value and defaults to queued', function (): 
         ->and($status('S-2'))->toBe(OrderStatus::InProgress)
         ->and($status('S-3'))->toBe(OrderStatus::Done)
         ->and($status('S-4'))->toBe(OrderStatus::Canceled);
+});
+
+it('locks an imported order that is being worked on and leaves the others unlocked', function (): void {
+    $report = analyseSheet([
+        templateRow(['number' => 'L-1', 'status' => 'Dikerjakan']),
+        templateRow(['number' => 'L-2', 'status' => 'Antri']),
+        templateRow(['number' => 'L-3', 'status' => 'Selesai']),
+    ]);
+
+    $this->importer->commit($report, $this->user);
+
+    $lock = fn (string $number): LockType => ProductionOrder::query()->where('number', $number)->firstOrFail()->lock_type;
+
+    expect($lock('L-1'))->toBe(LockType::Auto)
+        ->and($lock('L-2'))->toBe(LockType::None)
+        ->and($lock('L-3'))->toBe(LockType::None);
 });
 
 it('rejects an unknown status and lists the choices', function (): void {

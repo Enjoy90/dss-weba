@@ -109,7 +109,9 @@ it('writes a history entry when an order is created and when it changes', functi
         ->and($entries[0]->action)->toBe('order.created')
         ->and($entries[1]->action)->toBe('order.updated')
         ->and($entries[1]->user_id)->toBe($manager->id)
-        ->and($entries[1]->changeLines())->toBe(['Status: Antri menjadi Dikerjakan']);
+        ->and($entries[1]->changeLines()[0])->toBe('Status: Antri menjadi Dikerjakan')
+        ->and($entries[1]->changeLines()[1])->toBe('Jenis kunci: Tidak terkunci menjadi Kunci otomatis (sedang dikerjakan)')
+        ->and($entries[1]->changeLines())->toHaveCount(3);
 });
 
 it('does not write a history entry when nothing changed', function (): void {
