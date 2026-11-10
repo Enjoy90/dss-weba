@@ -40,12 +40,12 @@ Fase dinyatakan selesai bila semua butir ini terpenuhi:
 | 4 | Penilaian | 7 | 7 |
 | 5 | Impor dan Ekspor Excel | 3 | 3 |
 | 6 | Mesin SAW dan Evaluasi | 9 | 9 |
-| 7 | Hasil, Persetujuan, Penerapan | 10 | 0 |
+| 7 | Hasil, Persetujuan, Penerapan | 10 | 10 |
 | 8 | Dasbor dan Laporan | 6 | 0 |
 | 9 | Log, Pengaturan, Penjadwalan | 4 | 0 |
 | 10 | Pengujian dan Validasi | 6 | 0 |
 | 11 | Pemasangan dan Dokumentasi | 4 | 0 |
-| Total | | 72 | 42 |
+| Total | | 72 | 52 |
 
 Urutan: Fase 0 sampai 11 dikerjakan berurutan. Fase 5 butuh Fase 2 dan 4, Fase 6 butuh Fase 3 dan 4, Fase 7 butuh Fase 6, Fase 8 butuh Fase 7.
 
@@ -198,25 +198,25 @@ Catatan: Batas tunggu maksimum (bawaan 7 hari) dan kunci otomatis dibaca dari pe
 
 Isi: 10 tugas (S 3, M 5, L 2).
 
-- [ ] **P7-01** Daftar evaluasi dengan status dan filter (M)
+- [x] **P7-01** Daftar evaluasi dengan status dan filter (M)
   - Selesai bila: Daftar tampil
-- [ ] **P7-02** Detail evaluasi tujuh tab (L)
+- [x] **P7-02** Detail evaluasi tujuh tab (L)
   - Selesai bila: Semua tab berisi data
-- [ ] **P7-03** Penyesuaian peringkat dengan alasan (M)
+- [x] **P7-03** Penyesuaian peringkat dengan alasan (M)
   - Selesai bila: Peringkat sistem dan akhir tersimpan
-- [ ] **P7-04** Alur ajukan, setujui, tolak, terapkan sesuai pengaturan (L)
+- [x] **P7-04** Alur ajukan, setujui, tolak, terapkan sesuai pengaturan (L)
   - Selesai bila: Kriteria penerimaan F11 terpenuhi
-- [ ] **P7-05** Penanda Prioritas Utama di order (S)
+- [x] **P7-05** Penanda Prioritas Utama di order (S)
   - Selesai bila: Label tampil di daftar order
-- [ ] **P7-06** Bandingkan dua evaluasi (M)
+- [x] **P7-06** Bandingkan dua evaluasi (M)
   - Selesai bila: Naik, turun, tetap tampil benar
-- [ ] **P7-07** Aksi pasang dan lepas kunci manual dengan alasan wajib dan tanggal berakhir opsional (M)
+- [x] **P7-07** Aksi pasang dan lepas kunci manual dengan alasan wajib dan tanggal berakhir opsional (M)
   - Selesai bila: Kriteria penerimaan F18 nomor 3 terpenuhi
-- [ ] **P7-08** Kunci otomatis saat status Dikerjakan dan pelepasan saat Selesai atau Dibatalkan, mengikuti pengaturan (S)
+- [x] **P7-08** Kunci otomatis saat status Dikerjakan dan pelepasan saat Selesai atau Dibatalkan, mengikuti pengaturan (S)
   - Selesai bila: Ikon kunci muncul dan hilang sesuai status
-- [ ] **P7-09** Grafik tren peringkat per order di halaman detail (M)
+- [x] **P7-09** Grafik tren peringkat per order di halaman detail (M)
   - Selesai bila: Grafik sesuai riwayat evaluasi
-- [ ] **P7-10** Peringatan bila slot Prioritas Utama penuh oleh kunci manual dan eskalasi; order Dikerjakan tidak dihitung (S)
+- [x] **P7-10** Peringatan bila slot Prioritas Utama penuh oleh kunci manual dan eskalasi; order Dikerjakan tidak dihitung (S)
   - Selesai bila: Peringatan tampil di hasil evaluasi
 
 ## Fase 8: Dasbor dan Laporan
@@ -313,3 +313,6 @@ Isi tiap kali fase ditutup: tanggal, hasil uji (jumlah lulus), temuan, dan keput
   - Keputusan perancangan: (1) tanpa paket baru, memakai OpenSpout yang sudah ada bersama Filament. (2) Impor dan ekspor hanya untuk Admin dan Manajer (F06 dan Bab 9). (3) Baris bermasalah dilewati dan baris benar tetap diimpor, sesuai kriteria penerimaan F06 nomor 2. (4) Berkas dibaca ulang saat konfirmasi, tidak memakai data pratinjau di halaman, supaya yang tersimpan selalu berasal dari berkas. (5) Saat memperbarui, kolom wajib menimpa dan kolom opsional yang kosong membiarkan data lama. (6) Kolom bahan, sisa waktu, dan progres dipetakan ke kriteria C3, C4, C5 berdasarkan kode dan lewat batas yang sama dengan halaman Penilaian Order. (7) Order yang diimpor sebagai Dikerjakan belum bergembok otomatis, itu P7-08.
 - 8 Nov 2026, Fase 6 selesai. Panduan bertambah Bab 8 (enam tangkapan layar nyata dari `tangkap-layar/fase6.js`), docx dibangun ulang lewat `bangun.sh panduan` (59 halaman, nomor halaman daftar isi stabil, validasi skema Word lulus). Mesin SAW murni (`SawCalculator`), pengurut peringkat berkelompok (`PriorityRanker`), tabel `evaluations` dan `evaluation_items`, layanan evaluasi (`EvaluationService`: pemeriksaan awal, hitung, simpan salinan dalam satu transaksi), dan halaman Jalankan Perhitungan di grup Prioritas. Tes: 347 lulus (1.645 assertion). Contoh PRD 11.6 (0,8550; 0,7400; 0,7000, peringkat A, C, B) dan 11.7 (order lama dieskalasi di atas order baru berskor lebih tinggi) jadi uji unit. Kinerja diukur di tes: 200 order 1,4 detik (batas NF01 5 detik), 1.000 order 2,6 detik. Uji tiruan pada 21 aturan (normalisasi, nilai kosong, batas eskalasi 7 dan 8 hari, urutan kelompok, urutan dalam kelompok, seri skor, order Dikerjakan tidak dieskalasi, peringkat sistem murni, batas kunci manual, pengaturan kunci otomatis, konfirmasi order belum lengkap, pemeriksaan bobot dan skala, transaksi, peringkat sebelumnya, evaluasi tidak bisa diubah atau dihapus, harga tidak masuk salinan, hak akses, centang konfirmasi, kolom `evaluated_at` tanpa ON UPDATE) menangkap semuanya. Satu mutasi (seri skor tanpa tenggat) awalnya lolos, tesnya diperkuat lalu tertangkap. Diuji di peramban sungguhan dengan data demo untuk keempat peran: Admin, Supervisor, dan Pimpinan mendapat 403 dan tidak melihat menunya, tidak ada overflow di 1366 piksel.
   - Keputusan perancangan (bisa ditolak): (1) halaman Jalankan Perhitungan sementara memuat tabel peringkat hasil terakhir, karena F10 butir 5 mengarah ke detail evaluasi yang baru dibuat di P7-02. (2) Halaman hanya untuk Manajer (Bab 9), jadi peran lain belum punya jalan untuk melihat hasil sampai P7-01. (3) Konfirmasi order belum lengkap atau kedaluwarsa dijaga di server lewat parameter `acknowledgeWarnings`, bukan hanya kotak centang di layar. (4) Kunci dibaca dari kolom `lock_type`, bukan dari status order, sehingga order Dikerjakan yang belum bergembok (impor, ubah status dengan tangan) belum masuk kelompok Terkunci sampai P7-08. (5) Kunci manual berlaku sampai tanggal berakhirnya dan lepas keesokan harinya. (6) Eskalasi bila lama menunggu lebih dari batas (7 hari belum, 8 hari ya), hanya untuk order Antri. (7) Seri skor: tenggat terdekat, lalu tanggal masuk lebih awal, lalu id order paling kecil supaya hasil tidak bergantung urutan data. (8) Peringkat sebelumnya diambil dari evaluasi terakhir yang tidak Dibatalkan, hanya bila order ada di sana (bukan evaluasi yang lebih lama). (9) Pengaturan `lock_in_progress`, `max_wait_days`, dan `top_n_priority` dibaca dari tabel `settings` dengan bawaan 7, 5, dan aktif, halaman pengaturannya tetap P9-02. (10) Opsi "wajib lengkap" (K-03) belum dibuat, bawaannya order belum lengkap ikut dengan skala 1. (11) Evaluasi dan itemnya tidak bisa diubah atau dihapus di tingkat model, kecuali kolom alur status pada evaluasi dan kolom peringkat akhir dan alasan pada item. (12) Salinan order tidak memuat harga atau nilai order, tetapi `raw_values` C6 memuat rupiah, jadi tampilan di Fase 7 wajib menyembunyikannya dari Supervisor.
+- 8 Nov 2026, Fase 7 selesai. Menu Hasil Evaluasi (daftar dengan filter status, pemicu, dan tanggal, serta rincian tujuh tab), penyesuaian peringkat dengan alasan, alur ajukan, setujui, tolak, terapkan, dan batalkan, label Prioritas Utama di daftar order, bandingkan dua evaluasi, kunci manual (pasang dan lepas dengan alasan), kunci otomatis mengikuti status, grafik tren peringkat di detail order, dan peringatan slot Prioritas Utama penuh. Tes: 417 lulus (2.249 assertion). Uji tiruan pada 27 aturan (slot, status Antri untuk label, peringatan slot, urutan penerapan, persetujuan wajib, hanya evaluasi terbaru, label lama dilepas, catatan tolak wajib, ajukan saat persetujuan tidak wajib, batalkan evaluasi diterapkan, kunci terkunci di atas biasa, alasan penyesuaian, penyesuaian setelah disetujui, hak akses Pimpinan dan Admin, tanggal berakhir kunci, alasan kunci, kunci otomatis, label dan kunci dilepas saat selesai, filter kunci kedaluwarsa, kriteria nilai order untuk Supervisor, arah perbandingan, grafik tanpa evaluasi batal, tombol alur menurut status) menangkap semuanya. Satu mutasi (peringatan slot tak tampil) awalnya lolos karena peringatan tampil dua kali, tesnya diperkuat lalu tertangkap. Diuji di peramban sungguhan dengan data demo untuk keempat peran: alur lengkap Manajer, Pimpinan (tolak lalu setujui), Manajer (terapkan), kunci order, dua perhitungan, bandingkan, serta Admin dan Supervisor hanya bisa melihat. Semua halaman baru muat di 1366 piksel.
+  - Temuan saat uji: tabel daftar order sudah lebih lebar dari 1366 piksel sebelum Fase 7 (lebar isi 1083 dari area 982). Kolom Produk kini disembunyikan bawaannya (lebar isi 982, pas), Bab 4 diperbarui dan gambar daftar order (09, 09a, 10, 11, 17, 18, 40) serta detail order (34, 35) diambil ulang. Teks deskripsi grafik semula terbalik (garis naik berarti order naik karena sumbu dibalik), sudah dikoreksi dan diuji.
+  - Keputusan perancangan (bisa ditolak): (1) Batalkan evaluasi dibuat untuk Manajer dan Pimpinan, hanya sebelum diterapkan, karena PRD memuat status Dibatalkan tanpa menyebut siapa yang membatalkan. (2) Evaluasi yang ditolak kembali ke Draf dengan catatan, dan catatan hilang saat diajukan lagi. (3) Persetujuan wajib bawaannya aktif (`approval_required`), tanpa halaman pengaturan sampai P9-02. (4) Label Prioritas Utama diberikan ke N order Antri teratas, N dari `top_n` evaluasi, status Antri dibaca dari order saat diterapkan, dan semua label lain dikembalikan ke Normal. (5) Penyesuaian peringkat menggeser order lain, alasan hanya disimpan di order yang dipindah, dan order Terkunci tidak boleh berada di bawah order Biasa (berlaku juga sebaliknya untuk order Biasa yang dinaikkan di atas order terkunci). (6) Kunci otomatis dipasang di model order, jadi berlaku juga untuk impor dan formulir, menggantikan kunci manual saat order mulai dikerjakan, dan Selesai atau Dibatalkan melepas semua kunci serta label Prioritas Utama. (7) Kunci manual tidak bisa dipasang pada order yang sedang dikerjakan, dan kunci otomatis tidak bisa dilepas dengan tangan. (8) Tanggal berakhir kunci tidak boleh sebelum hari ini. (9) Label Prioritas Utama tampil sebagai badge kedua di sel Status, bukan kolom baru. (10) Kolom Produk di daftar order disembunyikan bawaannya. (11) Supervisor tidak melihat kriteria nilai order di tab mana pun pada rincian evaluasi. (12) Peringatan slot penuh dihitung dari order Antri yang dikunci manual dan yang dieskalasi, dan tampil di rincian evaluasi dan jendela konfirmasi terapkan. (13) Bandingkan evaluasi tanpa menu sendiri. (14) Notifikasi N1 sampai N10 belum dibuat, itu P9-04.

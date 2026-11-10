@@ -25,7 +25,7 @@ Order produksi masuk lewat formulir atau impor Excel. Tiap order punya satu bari
 - `Criterion` (kode C1 dan seterusnya, weight, importance, direction, value_source, is_active; saat disimpan memicu `CriterionWeights::refresh()`), `CriterionScale` (score, lower_bound, upper_bound).
 - `Assessment` (satu per order per kriteria, raw_value, is_overridden, override_reason, value_updated_at), `AssessmentHistory`.
 - `Setting` (`Setting::get($key, $default)`, `Setting::put`), kunci yang dipakai: `weight_mode`, `stale_value_days`.
-- `Evaluation` (satu perhitungan: salinan kriteria dan pengaturan dalam JSON, `evaluated_at` tanpa ON UPDATE, tidak bisa diubah atau dihapus kecuali kolom alur status) dan `EvaluationItem` (satu order per evaluasi: nilai asli, skala, normalisasi, w x r, skor, `system_rank`, `final_rank`, `previous_rank`, `waiting_days`, `rank_group`, `warnings`; hanya `final_rank` dan `adjustment_reason` yang boleh berubah). `ProductionOrder::lockIsActive()` memutuskan kunci masih berlaku pada suatu hari.
+- `Evaluation` (satu perhitungan: salinan kriteria dan pengaturan dalam JSON, `evaluated_at` tanpa ON UPDATE, tidak bisa diubah atau dihapus kecuali kolom alur status) dan `EvaluationItem` (satu order per evaluasi: nilai asli, skala, normalisasi, w x r, skor, `system_rank`, `final_rank`, `previous_rank`, `waiting_days`, `rank_group`, `warnings`; hanya `final_rank` dan `adjustment_reason` yang boleh berubah). `ProductionOrder::lockIsActive()` memutuskan kunci masih berlaku pada suatu hari, dan hook `saving` di model itu memasang atau melepas kunci otomatis mengikuti status (`syncLockWithStatus`). `Evaluation` punya `isLatest`, `hasEarlier`, dan predikat `allowsSubmit`, `allowsDecision`, `allowsApply`, `allowsAdjust`, `allowsCancel`. `ActivityLog::record()` menulis satu baris log.
 - `ActivityLog` (riwayat perubahan, `changeLines(hidePrices)`), dipasang lewat trait `Concerns/LogsActivity`.
 - Morph map didaftarkan di `AppServiceProvider` ('production_orders', 'criteria', 'evaluations'). Setiap model yang masuk ke `activity_logs` harus ada di morph map.
 
@@ -38,18 +38,20 @@ Order produksi masuk lewat formulir atau impor Excel. Tiap order punya satu bari
 - `ResolvedValue` (objek nilai), `AssessmentFormatter` (format tampilan nilai dan satuan).
 - `Import/`: `OrderSheetReader` (baca xlsx, batas 1.000 baris), `OrderImporter` (`analyze` lalu `commit` dalam satu transaksi), `RowResult`, `ImportReport`.
 - `Export/OrderSheetWriter`: `writeTemplate`, `writeSample`, `writeOrders`.
+- `EvaluationSettings` (bawaan dan pembaca pengaturan evaluasi: `maxWaitDays`, `topN`, `lockInProgress`, `approvalRequired`), `OrderLocker` (kunci manual: `lock`, `unlock`).
 - `Saw/` (murni, tanpa basis data): `SawCalculator` (`calculate(bobot, skala)` mengembalikan `SawResult`), `PriorityRanker` (`rank(kandidat, batasTunggu)` mengembalikan `RankPlacement`), `RankCandidate`. Contoh PRD 11.6 dan 11.7 diuji di `tests/Unit`.
-- `Evaluation/`: `EvaluationService` (`preflight` tanpa menyimpan, `run` dalam satu transaksi, `currentSettings`), `EvaluationPreflight` (hasil pemeriksaan beserta data yang sudah dimuat), `EvaluationBlockedException` (bobot, skala, atau order belum siap), `EvaluationNeedsConfirmationException` (order belum lengkap atau kedaluwarsa dan belum dikonfirmasi).
+- `Evaluation/`: `EvaluationService` (`preflight` tanpa menyimpan, `run` dalam satu transaksi, `currentSettings`), `EvaluationPreflight` (hasil pemeriksaan beserta data yang sudah dimuat), `EvaluationBlockedException` (bobot, skala, atau order belum siap), `EvaluationNeedsConfirmationException` (order belum lengkap atau kedaluwarsa dan belum dikonfirmasi), `EvaluationWorkflow` (`submit`, `approve`, `reject`, `apply`, `cancel`, `planFor`), `EvaluationAdjuster` (`move` memindahkan peringkat akhir), `EvaluationComparison` (`compare`, `counts`), `PriorityPlan` (`for`, `isFull`, `has`: slot Prioritas Utama).
 
 ## Hak akses (`app/Policies`)
 
-Satu Policy per model: User, Customer, Product, Evaluation (`create` hanya Manajer, `update` dan `delete` selalu false), ProductionOrder (termasuk `changeStatus`, `import`, `export`), Criterion (termasuk `editScale`), Assessment (`updateValue`, `viewCriterion`, `SUPERVISOR_CRITERIA` = C4 dan C5). Policy yang baru wajib dibuat bersamaan dengan resource-nya.
+Satu Policy per model: User, Customer, Product, Evaluation (`create` dan `submit` Manajer, `approve` dan `reject` Pimpinan, `apply`, `adjust`, `cancel` Manajer dan Pimpinan, `update` dan `delete` selalu false), ProductionOrder (termasuk `changeStatus`, `import`, `export`, `lock`), Criterion (termasuk `editScale`), Assessment (`updateValue`, `viewCriterion`, `SUPERVISOR_CRITERIA` = C4 dan C5). Policy yang baru wajib dibuat bersamaan dengan resource-nya.
 
 ## Filament (`app/Filament`)
 
 - Panel: `app/Providers/Filament/AdminPanelProvider.php`. Merek, grup menu (Produksi, Prioritas, Data Master, Laporan, Pengaturan), sidebar bisa dipersempit, CSS badge berwarna penuh lewat render hook, halaman masuk dan profil khusus.
 - Resource: Users, Customers, Products (modal sederhana), ProductionOrders (daftar dengan tombol Impor dan Ekspor, detail dengan bagian Penilaian, relation manager Riwayat nilai dan Riwayat perubahan), Criteria (ManageCriteria dengan aksi Atur bobot langsung dan Hitung dari tingkat kepentingan).
-- Halaman khusus: `ScaleSettings` (slug skala-nilai), `AssessmentMatrix` (slug penilaian-order), `ImportOrders` (slug impor-order), `RunEvaluation` (slug jalankan-perhitungan, grup Prioritas, hanya Manajer, memuat tabel peringkat hasil terakhir sementara sampai Fase 7), `Auth/Login`, `Auth/EditProfile`.
+- Halaman khusus: `ScaleSettings` (slug skala-nilai), `AssessmentMatrix` (slug penilaian-order), `ImportOrders` (slug impor-order), `RunEvaluation` (slug jalankan-perhitungan, grup Prioritas, hanya Manajer, memuat tabel peringkat ringkas hasil terakhir), `CompareEvaluations` (slug bandingkan-evaluasi, tanpa menu), `Auth/Login`, `Auth/EditProfile`.
+- Resource Evaluations (`EvaluationResource`, halaman `ListEvaluations` dan `ViewEvaluation` dengan tujuh tab, `EvaluationTables` membangun tabel tab dan menyembunyikan C6 dari Supervisor), view `resources/views/filament/evaluations/table.blade.php`, aksi kunci di `app/Filament/Actions/OrderLockActions.php` (dipakai daftar dan halaman order), dan grafik `app/Filament/Widgets/OrderRankTrendChart.php` (`$isDiscovered` false, dipasang di infolist order lewat `Livewire::make`).
 - Pola yang dipakai: aksi baris dikelompokkan dalam `ActionGroup` di sisi kiri (`RecordActionsPosition::BeforeColumns`), kolom bawaan disembunyikan agar muat di 1366 piksel, sel matriks memakai aksi kolom, `#[Exposed]` dan `#[Unexposed]` untuk properti Livewire, `FileUpload` dengan `storeFiles(false)` di impor.
 
 ## Basis data (`database`)
@@ -60,10 +62,10 @@ Seeder (urutan di `DatabaseSeeder`): `DemoUserSeeder` (4 akun), `DemoMasterSeede
 
 ## Tes (`tests`)
 
-Pest 4 dengan `RefreshDatabase`, basis data `dss_test` (MariaDB). Satu folder per area di `tests/Feature` (Auth, Users, Master, Orders, Criteria, Assessments, Import) dan `tests/Unit` (`ScaleRulesTest`, `SawCalculatorTest`, `PriorityRankerTest`); Evaluation untuk layanan, halaman, dan kinerja. Pembantu di `tests/Pest.php`: `makeXlsx`, `templateHeader`, `templateRow`. Total saat ini 347 tes, 1.645 assertion.
+Pest 4 dengan `RefreshDatabase`, basis data `dss_test` (MariaDB). Satu folder per area di `tests/Feature` (Auth, Users, Master, Orders, Criteria, Assessments, Import) dan `tests/Unit` (`ScaleRulesTest`, `SawCalculatorTest`, `PriorityRankerTest`); Evaluation (layanan, alur persetujuan, halaman, kinerja); Orders (`OrderLockTest`, `OrderPriorityAndTrendTest`). Pembantu di `tests/Pest.php`: `makeXlsx`, `templateHeader`, `templateRow`. Total saat ini 417 tes, 2.249 assertion.
 
 Pola tes: login dengan `$this->actingAs(User::factory()->manager()->create())`, lalu `Livewire::test(KelasHalaman::class, [...])`. Buat data lewat factory di `database/factories` dan pakai state yang sudah ada sebelum menulis manual: User (`admin`, `manager`, `supervisor`, `leader`, `inactive`), ProductionOrder (`status`, `inProgress`, `enteredDaysAgo`, `dueInDays`, `late`), Customer (`urgency`, `inactive`), Criterion (`importance`, `inactive`, `lowerFirst`), Assessment (`updatedDaysAgo`).
 
 ## Yang belum ada (jangan dikira sudah)
 
-Daftar dan detail evaluasi, penyesuaian peringkat, persetujuan, penerapan prioritas, kunci otomatis saat ganti status, dasbor berisi grafik, laporan, halaman log, halaman pengaturan, penjadwalan. Semua ada di TODO Fase 7 sampai 11.
+Dasbor berisi grafik, laporan, halaman log, halaman pengaturan, penjadwalan, notifikasi, dan pemantauan order Tertahan. Semua ada di TODO Fase 8 sampai 11.

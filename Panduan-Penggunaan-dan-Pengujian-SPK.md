@@ -3,9 +3,9 @@
 | Informasi | Isi |
 |---|---|
 | Aplikasi | SPK Prioritas Produksi (studi kasus PT Weba International) |
-| Versi dokumen | 1.4 |
+| Versi dokumen | 1.5 |
 | Tanggal | 8 November 2026 |
-| Cakupan | Fase 0 sampai Fase 6: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi |
+| Cakupan | Fase 0 sampai Fase 7: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order |
 | Alamat lokal | http://localhost:8001/admin |
 
 ## 1. Tentang Dokumen Ini
@@ -23,7 +23,7 @@ Setiap pengujian ditulis dengan urutan yang sama.
 1. **Tujuan** menjelaskan apa yang sedang dibuktikan.
 2. **Masuk sebagai** menyebut akun yang dipakai.
 3. **Langkah** adalah urutan klik yang harus diikuti, satu per satu.
-4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 10.
+4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 11.
 
 Kerjakan pengujian berurutan dari atas. Beberapa pengujian mengubah data, misalnya menonaktifkan akun. Di bagian itu ada petunjuk untuk mengembalikannya. Bila data sudah terlanjur berantakan, data demo bisa dibuat ulang seperti di Bagian 2.2.
 
@@ -41,9 +41,8 @@ Semua akun memakai kata sandi `password`.
 Supaya tidak bingung saat mencoba, berikut hal yang memang belum dibuat dan baru hadir di fase berikutnya.
 
 - Dasbor masih berisi sapaan saja. Kartu angka dan grafik dibuat di Fase 8.
-- Perhitungan SAW sudah ada di menu Jalankan Perhitungan (Bab 8), tetapi daftar evaluasi, halaman rincian dengan tujuh tab, penyesuaian peringkat, persetujuan, dan penerapan prioritas baru dibuat di Fase 7.
-- Kunci order otomatis saat status menjadi Dikerjakan belum aktif. Ikon gembok pada data demo sudah terpasang oleh data awal, tetapi mengubah status order secara manual, atau mengimpor order berstatus Dikerjakan, belum memasang atau melepas gembok. Itu dikerjakan di Fase 7.
-- Kolom Prioritas selalu bernilai Normal sampai fitur penerapan prioritas selesai di Fase 7.
+- Pengaturan sistem (persetujuan Pimpinan wajib atau tidak, jumlah Prioritas Utama, batas tunggu 7 hari, kunci otomatis) belum punya halaman. Semuanya memakai nilai bawaan. Halamannya dibuat di Fase 9.
+- Notifikasi (lonceng) dan evaluasi terjadwal baru ada di Fase 9.
 - Halaman log aktivitas lengkap baru ada di Fase 9. Yang sudah ada hanya riwayat perubahan di halaman detail order.
 
 ## 2. Menyiapkan Aplikasi di Komputer Lokal
@@ -69,7 +68,7 @@ Langkah ini membuat semua tabel dari awal dan mengisinya dengan data contoh: emp
 php artisan migrate:fresh --seed
 ```
 
-**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 10.
+**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 11.
 
 Tanggal pada order demo dibuat relatif terhadap hari ini. Jadi beberapa order selalu terlambat dan beberapa selalu hampir jatuh tempo, kapan pun data dibuat. Nilai manual penilaian juga dibuat dengan usia yang berbeda, ada yang baru dan ada yang sudah lima hari.
 
@@ -285,12 +284,12 @@ Bab ini membuktikan bahwa data pelanggan, produk, dan order bisa dicatat, dicari
 
 2. Baca kolomnya dari kiri ke kanan.
    - **Nomor** dibuat otomatis dengan pola ORD, tahun, dan urutan.
-   - **Pelanggan**, **Produk**, dan **Jml** (jumlah pasang) adalah isi order.
+   - **Pelanggan** dan **Jml** (jumlah pasang) adalah isi order. Kolom **Produk** disembunyikan bawaannya supaya tabel muat di layar laptop 1366 piksel.
    - **Tenggat** adalah tanggal batas penyelesaian.
    - **Sisa hari** memberi tahu keadaan tenggat dalam kata. Merah bertuliskan "Terlambat 6 hari" berarti tenggat sudah lewat. Kuning seperti "1 hari lagi" berarti tenggat dalam tiga hari ke depan. Abu-abu berarti masih longgar. Tanda "-" muncul pada order yang sudah Selesai atau Dibatalkan karena tenggat tidak lagi relevan.
-   - **Status** adalah Antri, Dikerjakan, Selesai, atau Dibatalkan.
+   - **Status** adalah Antri, Dikerjakan, Selesai, atau Dibatalkan. Order yang sudah diberi label Prioritas Utama (Bab 9) menampilkan badge oranye kedua di bawah status.
    - **Kunci** menampilkan ikon gembok pada order yang dilindungi dari disalip order baru. Arahkan kursor ke gembok untuk melihat alasannya.
-3. Klik ikon kolom (tiga batang vertikal) di sebelah ikon corong. Centang **Masuk**, **Menunggu**, dan **Prioritas** untuk menampilkan kolom tambahan. Kolom itu disembunyikan secara bawaan supaya tabel tidak terlalu lebar.
+3. Klik ikon kolom (tiga batang vertikal) di sebelah ikon corong. Centang **Produk**, **Masuk**, **Menunggu**, dan **Prioritas** untuk menampilkan kolom tambahan. Kolom itu disembunyikan secara bawaan supaya tabel tidak terlalu lebar.
 
 **Hasil yang diharapkan:** setiap order terbaca keadaannya tanpa membuka detail. Order yang terlambat langsung terlihat dari warna merah.
 
@@ -392,7 +391,7 @@ Tenggat yang sama dengan tanggal masuk diperbolehkan.
 
 4. Pilih status baru, misalnya **Dikerjakan**, lalu klik **Simpan status**.
 
-**Hasil yang diharapkan:** muncul pemberitahuan "Status order diubah menjadi Dikerjakan" dan badge di daftar ikut berubah. Perubahan itu tercatat di Riwayat perubahan order tersebut.
+**Hasil yang diharapkan:** muncul pemberitahuan "Status order diubah menjadi Dikerjakan" dan badge di daftar ikut berubah. Order yang menjadi Dikerjakan langsung bergembok otomatis (Bab 9). Perubahan itu, termasuk gemboknya, tercatat di Riwayat perubahan order tersebut.
 
 Supervisor juga tidak bisa membuka halaman ubah order. Mengetik alamat `/admin/production-orders/1/edit` langsung menghasilkan halaman 403.
 
@@ -878,7 +877,7 @@ Nomor baris sama dengan nomor baris di Excel, jadi mudah dicari. Di bawah daftar
 
 **Hasil yang diharapkan:** order baru langsung punya nilai di C3, C4, dan C5 sesuai kolom Excel (misalnya order pertama: bahan 42%, sisa waktu 13 jam, progres 3%). Di detail order, tab **Riwayat nilai** mencatat nama Anda sebagai pengisinya.
 
-Order yang diimpor sebagai Dikerjakan belum mendapat gembok otomatis. Gembok otomatis dikerjakan di Fase 7, sama seperti saat status diubah dengan tangan.
+Order yang diimpor sebagai Dikerjakan langsung mendapat gembok otomatis, sama seperti saat statusnya diubah dengan tangan (Bab 9).
 
 **Mengembalikan data:** buat ulang data demo seperti di Bagian 2.2.
 
@@ -944,7 +943,7 @@ Coba satu per satu di halaman **Impor Order**, lalu klik **Periksa berkas**.
 
 Bab ini membuktikan bahwa sistem bisa menghitung peringkat prioritas semua order yang masih aktif dengan metode SAW, lalu menyimpan hasilnya sebagai evaluasi. Menu barunya bernama **Jalankan Perhitungan**, ada di grup **Prioritas**, dan hanya untuk **Manajer**.
 
-Halaman evaluasi yang lengkap (daftar evaluasi, tujuh tab rincian, penyesuaian peringkat, persetujuan, dan penerapan prioritas) baru dibuat di Fase 7. Untuk sementara, hasil perhitungan terakhir tampil sebagai tabel peringkat di halaman yang sama dengan tombol hitung.
+Halaman evaluasi yang lengkap (daftar evaluasi, tujuh tab rincian, penyesuaian peringkat, persetujuan, dan penerapan prioritas) dijelaskan di Bab 9. Di halaman Jalankan Perhitungan sendiri, hasil perhitungan terakhir tetap tampil sebagai tabel peringkat ringkas di bawah tombol hitung.
 
 ### 8.1 Cara sistem menghitung
 
@@ -955,7 +954,7 @@ Halaman evaluasi yang lengkap (daftar evaluasi, tujuh tab rincian, penyesuaian p
 5. Peringkat akhir disusun dalam tiga kelompok berurutan. **Terkunci** berisi order yang sedang dikerjakan atau yang dikunci Manajer. **Eskalasi** berisi order Antri yang tidak terkunci dan sudah menunggu lebih dari 7 hari, diurutkan dari yang paling lama menunggu. **Biasa** berisi semua order lain. Di dalam kelompok Terkunci dan Biasa, urutannya menurut skor.
 6. Nilai manual yang masih kosong dihitung sebagai skala 1 (terburuk) dan dicatat sebagai peringatan.
 
-Setiap perhitungan disimpan lengkap sebagai satu evaluasi: waktu, pelaksana, salinan kriteria, bobot, skala, dan pengaturan yang dipakai, serta semua nilai tiap order. Evaluasi yang sudah tersimpan tidak bisa diubah atau dihapus, jadi hasil lama tetap bisa diperiksa walau bobot dan skala berubah kemudian. Perubahan yang diizinkan hanya status evaluasi, yang dipakai di Fase 7.
+Setiap perhitungan disimpan lengkap sebagai satu evaluasi: waktu, pelaksana, salinan kriteria, bobot, skala, dan pengaturan yang dipakai, serta semua nilai tiap order. Evaluasi yang sudah tersimpan tidak bisa diubah atau dihapus, jadi hasil lama tetap bisa diperiksa walau bobot dan skala berubah kemudian. Perubahan yang diizinkan hanya status evaluasi dan peringkat akhir hasil penyesuaian, yang dipakai di Bab 9.
 
 ### 8.2 Uji 6.1: Membuka halaman dan membaca kesiapan data
 
@@ -1060,15 +1059,238 @@ Pada hasil Uji 6.4 langkah 2, perhatikan kolom **Perubahan** dan badge warnanya.
 1. Masuk sebagai **Manajer**. Menu **Jalankan Perhitungan** tampil di grup Prioritas.
 2. Masuk sebagai **Admin**, **Supervisor**, atau **Pimpinan**. Menu itu tidak tampil. Membuka `http://localhost:8001/admin/jalankan-perhitungan` langsung menghasilkan halaman 403.
 
-**Hasil yang diharapkan:** sesuai di atas. Ketiga peran lain akan melihat hasil evaluasi lewat halaman Evaluasi di Fase 7.
+**Hasil yang diharapkan:** sesuai di atas. Ketiga peran lain melihat hasil evaluasi lewat menu Hasil Evaluasi (Bab 9).
 
 **Mengembalikan data:** buat ulang data demo seperti di Bagian 2.2. Evaluasi yang tersimpan ikut terhapus oleh perintah itu.
 
-## 9. Menjalankan Pengujian Otomatis
+## 9. Fase 7: Hasil Evaluasi, Persetujuan, dan Perlindungan Order Lama
+
+Bab ini membuktikan bahwa hasil perhitungan bisa dibaca lengkap, disesuaikan, disetujui, lalu diterapkan sebagai label **Prioritas Utama** di daftar order. Bab ini juga membuktikan bahwa order lama terlindungi: order bisa dikunci, order yang sedang dikerjakan terkunci sendiri, dan perjalanan peringkat tiap order bisa dilihat.
+
+Menu barunya bernama **Hasil Evaluasi**, ada di grup **Prioritas**, dan bisa dibuka semua peran. Yang boleh mengubah sesuatu dijelaskan di Uji 7.10.
+
+### 9.1 Alur status evaluasi
+
+Evaluasi baru berstatus **Draf**. Alurnya Draf, Diajukan, Disetujui, lalu Diterapkan. Evaluasi yang belum diterapkan bisa **Dibatalkan**. Isi hasil perhitungan tidak pernah berubah, hanya status dan peringkat akhir hasil penyesuaian.
+
+| Langkah | Siapa | Syarat |
+|---|---|---|
+| Ajukan untuk disetujui | Manajer | Status Draf, persetujuan Pimpinan diwajibkan |
+| Setujui atau Tolak | Pimpinan | Status Diajukan. Menolak wajib memakai catatan |
+| Sesuaikan peringkat | Manajer, Pimpinan | Status Draf atau Diajukan. Alasan wajib |
+| Terapkan prioritas | Manajer, Pimpinan | Status Disetujui, dan hanya evaluasi terbaru |
+| Batalkan evaluasi | Manajer, Pimpinan | Belum diterapkan |
+
+Persetujuan Pimpinan diwajibkan secara bawaan. Bila nanti dimatikan di pengaturan (halaman pengaturannya dibuat di Fase 9), Manajer bisa menerapkan Draf langsung dan tombol Ajukan tidak tampil.
+
+Label Prioritas Utama diberikan kepada sejumlah order **Antri** teratas pada peringkat akhir (bawaan 5). Order yang sedang Dikerjakan tetap berada di atas peringkat tetapi tidak memakai slot, supaya pesanan baru yang mendesak masih punya peluang. Order Antri yang dikunci manual dan yang dieskalasi berada paling atas dan ikut memakai slot.
+
+### 9.2 Uji 7.1: Membuka daftar evaluasi dan menyaringnya
+
+**Tujuan:** menemukan evaluasi yang pernah dijalankan.
+**Masuk sebagai:** Manajer (`manajer@spk.test`), dengan data demo yang baru dibuat.
+
+1. Buka menu **Prioritas**, lalu **Hasil Evaluasi**.
+
+![Daftar evaluasi yang masih kosong](60-evaluasi-kosong.png)
+
+**Hasil yang diharapkan:** keadaan kosong "Belum ada evaluasi" dengan tombol menuju Jalankan Perhitungan.
+
+2. Jalankan satu perhitungan seperti di Uji 6.2, lalu buka lagi **Hasil Evaluasi**.
+
+![Daftar evaluasi](61-evaluasi-daftar.png)
+
+**Hasil yang diharapkan:** satu baris berisi nama, waktu, pemicu (Manual), jumlah order (21), status (Draf), dan siapa yang menjalankannya. Kolom **Disetujui oleh** masih berisi tanda hubung.
+
+3. Klik ikon corong. Coba filter **Status**, **Pemicu**, dan **Tanggal**.
+
+**Hasil yang diharapkan:** daftar menyempit sesuai pilihan. Memilih status Dibatalkan menampilkan keadaan kosong karena belum ada yang dibatalkan.
+
+### 9.3 Uji 7.2: Membaca rincian evaluasi
+
+**Tujuan:** memeriksa dari mana setiap skor dan peringkat berasal.
+**Masuk sebagai:** Manajer.
+
+1. Klik baris evaluasi di daftar.
+
+![Rincian evaluasi](62-evaluasi-detail.png)
+
+**Hasil yang diharapkan:** bagian **Ringkasan** menampilkan status Draf, waktu, pemicu, pelaksana, jumlah order (21), dan jumlah Prioritas Utama (5). Di bawahnya ada kotak kuning **Slot Prioritas Utama penuh**: dalam data demo ada 7 order Antri yang dikunci manual atau dieskalasi, lebih banyak dari 5 slot, jadi order Antri biasa tidak kebagian label. Tabel di tab pertama memuat kolom **Peringkat** (akhir), **Sistem**, **Order**, **Menunggu**, **Skor**, **Kelompok**, **Prioritas Utama**, **Perubahan**, dan **Disesuaikan**. Kolom **Tenggat** disembunyikan bawaannya dan bisa dinyalakan lewat ikon kolom.
+
+2. Buka tab **Perhitungan skor**.
+
+![Tab Perhitungan skor](63-evaluasi-tab-skor.png)
+
+**Hasil yang diharapkan:** tiap order punya angka bobot dikali nilai normalisasi untuk setiap kriteria, dan di kolom paling kanan skor V yang sama dengan skor di tab pertama.
+
+3. Buka tab **Peringatan**.
+
+![Tab Peringatan](64-evaluasi-tab-peringatan.png)
+
+**Hasil yang diharapkan:** tab ini memberi angka 20 di judulnya. Isinya delapan nilai kosong yang dihitung sebagai skala 1 dan dua belas nilai manual yang sudah lama, ditambah kotak kuning slot penuh.
+
+4. Buka tab **Data nilai asli**, **Matriks keputusan**, **Matriks normalisasi**, dan **Kriteria dan skala**.
+
+**Hasil yang diharapkan:** semua tab berisi data dan tidak ada yang kosong. Tab **Kriteria dan skala** menampilkan bobot, arah, dan rentang skala yang dipakai saat perhitungan, dan isinya tidak ikut berubah bila bobot atau skala diubah sesudahnya.
+
+![Rincian evaluasi di layar laptop 1366 piksel](75-evaluasi-detail-1366.png)
+
+Halaman ini juga muat di layar laptop 1366 piksel, seperti pada gambar di atas.
+
+### 9.4 Uji 7.3: Menyesuaikan peringkat
+
+**Tujuan:** memindahkan satu order ke peringkat lain dengan alasan, tanpa menghapus peringkat sistem.
+**Masuk sebagai:** Manajer, pada evaluasi yang masih Draf.
+
+1. Pada baris ORD-2026-0005 (peringkat 1, Terkunci), klik ikon panah atas bawah di sisi kiri. Isi **Peringkat baru** dengan `21` dan alasan apa saja, lalu klik **Simpan peringkat**.
+
+![Penyesuaian order terkunci ditolak](65-evaluasi-sesuaikan-ditolak.png)
+
+**Hasil yang diharapkan:** muncul pemberitahuan "Tidak bisa dilanjutkan: Order terkunci tidak boleh turun ke bawah order biasa. Lepas kuncinya lebih dulu bila memang perlu." Peringkat tidak berubah.
+
+2. Pada baris ORD-2026-0021 (peringkat 16, Biasa), buka ikon yang sama. Isi `12` dan alasan "Pelanggan meminta dikirim lebih awal".
+
+![Form penyesuaian peringkat](66-evaluasi-sesuaikan-form.png)
+
+3. Klik **Simpan peringkat**.
+
+**Hasil yang diharapkan:** ORD-2026-0021 berada di peringkat 12 dengan tanda **Disesuaikan**, sedangkan kolom **Sistem** tetap 16. Arahkan kursor ke tanda itu untuk membaca alasannya. Order yang tadinya di peringkat 12 sampai 15 bergeser satu tingkat ke bawah. Mengosongkan alasan ditolak dengan pesan "wajib diisi", dan peringkat di luar 1 sampai 21 ditolak.
+
+### 9.5 Uji 7.4: Mengajukan, menolak, dan menyetujui
+
+**Tujuan:** memastikan evaluasi hanya bisa diterapkan setelah disetujui Pimpinan.
+
+1. Masuk sebagai **Manajer**. Pada rincian evaluasi, klik **Ajukan untuk disetujui**, lalu **Ya, ajukan**.
+
+**Hasil yang diharapkan:** status berubah menjadi **Diajukan**. Tombol Ajukan hilang dan tombol Terapkan belum ada.
+
+2. Masuk sebagai **Pimpinan** (`pimpinan@spk.test`) dan buka evaluasi yang sama. Tombol **Setujui** dan **Tolak** tampil. Klik **Tolak**, isi catatan "Urutan ORD-2026-0021 belum sesuai, mohon periksa lagi", lalu klik **Tolak evaluasi**.
+
+![Form penolakan](67-evaluasi-tolak-form.png)
+
+![Evaluasi yang ditolak](68-evaluasi-ditolak.png)
+
+**Hasil yang diharapkan:** status kembali **Draf** dan muncul kotak merah "Evaluasi ini dikembalikan oleh Pimpinan" berisi catatan tadi. Menolak tanpa catatan ditolak dengan pesan "wajib".
+
+3. Masuk lagi sebagai **Manajer**, klik **Ajukan untuk disetujui**. Catatan penolakan hilang dari halaman.
+4. Masuk sebagai **Pimpinan**, klik **Setujui**, lalu **Ya, setujui**.
+
+**Hasil yang diharapkan:** status **Disetujui**, dan kolom Disetujui oleh di Ringkasan terisi nama Pimpinan beserta waktunya. Tombol **Terapkan prioritas** muncul.
+
+### 9.6 Uji 7.5: Menerapkan prioritas
+
+**Tujuan:** memberi label Prioritas Utama kepada order Antri teratas.
+**Masuk sebagai:** Manajer atau Pimpinan, pada evaluasi yang sudah Disetujui.
+
+1. Klik **Terapkan prioritas**.
+
+![Konfirmasi penerapan](69-evaluasi-terapkan-konfirmasi.png)
+
+**Hasil yang diharapkan:** jendela menyebut order yang akan berlabel, yaitu ORD-2026-0019, ORD-2026-0013, ORD-2026-0016, ORD-2026-0011, dan ORD-2026-0017, serta menjelaskan bahwa label dari evaluasi sebelumnya diganti dan order lain kembali Normal. Karena slot penuh, jendela juga memberi peringatan agar jumlah Prioritas Utama atau kunci ditinjau.
+
+2. Klik **Ya, terapkan**.
+
+**Hasil yang diharapkan:** status menjadi **Diterapkan** dan tombol Terapkan hilang.
+
+3. Buka **Produksi**, lalu **Order Produksi**.
+
+![Label Prioritas Utama di daftar order](70-order-prioritas-utama.png)
+
+**Hasil yang diharapkan:** order yang berlabel menampilkan badge oranye **Prioritas Utama** di bawah badge status Antri. Badge itu terbaca penuh di layar 1366 piksel tanpa menggeser tabel. Order yang sedang Dikerjakan tidak diberi label walau berada di atas peringkat. Filter **Prioritas** di daftar menyaring order yang berlabel. Kolom **Produk** kini disembunyikan bawaannya supaya tabel muat, dan bisa dinyalakan lewat ikon kolom.
+
+4. Jalankan perhitungan lagi (Bab 8), lalu coba menerapkan evaluasi yang lama.
+
+**Hasil yang diharapkan:** evaluasi yang lama tidak punya tombol Terapkan lagi, karena hanya evaluasi terbaru yang bisa diterapkan. Menerapkan evaluasi baru menggantikan label yang lama.
+
+### 9.7 Uji 7.6: Mengunci dan melepas kunci order
+
+**Tujuan:** menahan order tertentu tetap di atas order biasa pada perhitungan berikutnya.
+**Masuk sebagai:** Manajer atau Pimpinan.
+
+1. Di **Order Produksi**, cari `ORD-2026-0025`. Klik tiga titik di sisi kiri barisnya, lalu **Pasang kunci**.
+
+![Jendela pasang kunci](71-order-pasang-kunci.png)
+
+2. Klik **Pasang kunci** tanpa mengisi alasan.
+
+**Hasil yang diharapkan:** ditolak dengan pesan kolom wajib diisi.
+
+3. Isi alasan "Pelanggan besar, harus selesai sebelum akhir bulan". Tanggal berakhir boleh dikosongkan (kunci tanpa batas). Klik **Pasang kunci**.
+
+**Hasil yang diharapkan:** ikon gembok muncul di baris itu. Di detail order, bagian **Penguncian** memuat jenis kunci manual, alasan, siapa yang mengunci, dan waktunya. Tab **Riwayat perubahan** mencatat satu baris "Order dikunci". Tanggal berakhir yang sudah lewat ditolak. Kunci dengan tanggal berakhir lepas sendiri sehari sesudah tanggal itu.
+
+4. Klik tiga titik lagi, pilih **Lepas kunci**, dan isi alasan.
+
+**Hasil yang diharapkan:** gembok hilang dan Riwayat perubahan mencatat "Kunci dilepas" beserta alasannya. Melepas kunci tanpa alasan ditolak. Order yang sedang dikerjakan tidak bisa dikunci manual karena sudah terkunci otomatis.
+
+### 9.8 Uji 7.7: Kunci otomatis mengikuti status
+
+**Tujuan:** memastikan order yang sedang dikerjakan tidak bisa disalip pesanan baru.
+**Masuk sebagai:** Manajer atau Supervisor.
+
+1. Di **Order Produksi**, pilih satu order Antri, klik tiga titik, **Ubah status**, pilih **Dikerjakan**, lalu **Simpan status**.
+
+**Hasil yang diharapkan:** ikon gembok muncul. Arahkan kursor ke gembok: "Kunci otomatis (sedang dikerjakan)". Pada perhitungan berikutnya order itu masuk kelompok Terkunci, di atas order biasa walau skornya lebih rendah.
+
+2. Ubah status order itu kembali ke **Antri**.
+
+**Hasil yang diharapkan:** gembok otomatis hilang. Kunci manual tidak ikut hilang bila order itu sebelumnya dikunci dengan tangan.
+
+3. Ubah status order Dikerjakan lain menjadi **Selesai** atau **Dibatalkan**.
+
+**Hasil yang diharapkan:** gembok hilang, begitu juga label Prioritas Utama bila ada. Order itu keluar dari perhitungan berikutnya.
+
+Order yang diimpor dari Excel dengan status Dikerjakan juga langsung terkunci otomatis.
+
+### 9.9 Uji 7.8: Tren peringkat di halaman order
+
+**Tujuan:** melihat apakah sebuah order naik, turun, atau diam dari perhitungan ke perhitungan.
+**Masuk sebagai:** peran apa pun.
+
+1. Kunci ORD-2026-0025 seperti di Uji 7.6, lalu jalankan perhitungan lagi.
+2. Buka detail ORD-2026-0025 dan turun ke bagian **Tren peringkat**.
+
+![Tren peringkat order](72-order-tren-peringkat.png)
+
+**Hasil yang diharapkan:** grafik garis dengan satu titik untuk tiap evaluasi. Order ini berada di peringkat 21 pada perhitungan pertama dan peringkat 8 sesudah dikunci. Peringkat 1 digambar di atas, jadi garis yang naik berarti order naik di daftar. Evaluasi yang dibatalkan tidak ikut digambar. Order yang belum pernah dihitung menampilkan keterangan "Belum ada evaluasi yang memuat order ini".
+
+### 9.10 Uji 7.9: Membandingkan dua evaluasi
+
+**Tujuan:** melihat perubahan peringkat semua order antara dua evaluasi.
+**Masuk sebagai:** peran apa pun.
+
+1. Di **Hasil Evaluasi**, klik **Bandingkan dua evaluasi**, atau klik **Bandingkan** di rincian sebuah evaluasi.
+2. Pilih evaluasi pertama pada **Dari evaluasi (sebelum)** dan yang kedua pada **Ke evaluasi (sesudah)**.
+
+![Perbandingan dua evaluasi](73-evaluasi-bandingkan.png)
+
+**Hasil yang diharapkan:** ringkasan satu kalimat seperti "1 naik, 8 turun, 12 tetap, 0 baru di evaluasi sesudah, 0 tidak ada lagi", disusul tabel tiap order dengan peringkat sebelum, peringkat sesudah, dan perubahannya (Naik, Turun, atau Tetap) beserta kedua skor. Pada contoh ini ORD-2026-0025 naik 13 tingkat karena dikunci. Order yang hanya ada di salah satu evaluasi diberi keterangan "Baru di evaluasi sesudah" atau "Tidak ada di evaluasi sesudah". Memilih dua evaluasi yang sama meminta Anda memilih dua yang berbeda.
+
+### 9.11 Uji 7.10: Hak akses
+
+**Tujuan:** memastikan tiap peran hanya bisa melakukan bagiannya, dan Supervisor tidak melihat nilai rupiah.
+
+1. Masuk sebagai **Admin** atau **Supervisor**. Buka **Hasil Evaluasi** dan sebuah evaluasi.
+
+**Hasil yang diharapkan:** semua tab bisa dibaca, tetapi tidak ada satu pun tombol **Ajukan**, **Setujui**, **Tolak**, **Terapkan**, **Batalkan**, maupun ikon **Sesuaikan peringkat**. Di daftar order, menu tiga titik Supervisor hanya berisi **Ubah status** (tidak ada Pasang kunci).
+
+2. Masuk sebagai **Supervisor**, buka tab **Data nilai asli**.
+
+![Tab Data nilai asli untuk Supervisor](74-evaluasi-supervisor-tab-nilai.png)
+
+**Hasil yang diharapkan:** kriteria Nilai order (C6) tidak tampil di tab mana pun, dan ada catatan "Kriteria nilai order tidak ditampilkan untuk peran Anda". Tidak ada angka rupiah di halaman.
+
+3. Masuk sebagai **Pimpinan**.
+
+**Hasil yang diharapkan:** tombol **Setujui** dan **Tolak** tampil pada evaluasi yang Diajukan, dan Pimpinan juga bisa menyesuaikan peringkat, menerapkan, membatalkan, serta memasang dan melepas kunci order. Tombol **Ajukan** tidak tampil untuk Pimpinan. Tombol **Jalankan Perhitungan** tetap hanya milik Manajer (Bab 8).
+
+**Mengembalikan data:** buat ulang data demo seperti di Bagian 2.2. Evaluasi, label, dan kunci yang dibuat ikut terhapus oleh perintah itu.
+
+## 10. Menjalankan Pengujian Otomatis
 
 Selain diuji dengan tangan seperti di atas, aplikasi punya pengujian otomatis yang menjalankan ratusan pemeriksaan dalam hitungan detik. Pengujian ini memakai basis data terpisah bernama `dss_test`, jadi tidak menyentuh data demo Anda.
 
-### 9.1 Cara menjalankan
+### 10.1 Cara menjalankan
 
 1. Pastikan MySQL menyala dan basis data `dss_test` ada.
 2. Di terminal folder `dss`, jalankan perintah berikut.
@@ -1079,9 +1301,9 @@ php artisan test --compact
 
 3. Tunggu sekitar setengah menit.
 
-**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 347 tes dengan 1.645 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
+**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 417 tes dengan 2.249 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
 
-### 9.2 Apa saja yang diuji
+### 10.2 Apa saja yang diuji
 
 - **Masuk dan profil:** login berhasil dan gagal, akun nonaktif, batas lima percobaan, halaman yang tertutup bagi tamu, ganti nama dan kata sandi.
 - **Pengguna:** hak akses Admin, tambah, ubah, nonaktifkan, atur ulang kata sandi, serta aturan Admin terakhir dan larangan menonaktifkan diri sendiri.
@@ -1092,9 +1314,11 @@ php artisan test --compact
 - **Penilaian:** nilai otomatis (sisa hari, urgensi, nilai order, lama menunggu) dan perubahannya, nilai manual dengan batas persen, jam, dan rupiah, urgensi yang ditimpa dengan alasan wajib, batas kedaluwarsa tiga hari, kelengkapan dan filternya, riwayat nilai, hak akses Manajer dan Supervisor, serta nilai rupiah yang disembunyikan dari Supervisor.
 - **Impor dan ekspor Excel:** pembacaan berkas dan judul kolom, aturan tiap kolom (kode, jumlah, tanggal, harga, status, persen, jam), dua puluh order benar dan dua baris rusak, mode tambah saja dan tambah serta perbarui, kolom opsional yang kosong tidak menimpa, batas 1.000 baris, berkas bukan Excel, penyimpanan satu transaksi yang batal total bila gagal, ekspor sesuai filter dan pencarian, serta ekspor yang diimpor kembali tanpa mengubah data.
 - **Mesin SAW dan evaluasi:** contoh hitung spesifikasi (skor 0,8550, 0,7400, 0,7000 dan peringkat A, C, B), kasus khusus (satu order, nilai sama, nilai kosong, skor sama), pengelompokan peringkat dan contoh order lama yang dieskalasi, batas 7 dan 8 hari, kunci otomatis dan manual beserta kunci yang kedaluwarsa, pemeriksaan sebelum hitung, konfirmasi order belum lengkap, salinan kriteria dan pengaturan yang tidak ikut berubah, peringkat sebelumnya, evaluasi yang tidak bisa diubah atau dihapus, penyimpanan satu transaksi, kinerja 200 dan 1.000 order, serta hak akses halaman hitung.
+- **Hasil evaluasi dan persetujuan:** alur Draf, Diajukan, Disetujui, Diterapkan, dan Dibatalkan beserta peran yang berhak di tiap langkah, penolakan wajib bercatatan, hanya evaluasi terbaru yang bisa diterapkan, label Prioritas Utama untuk N order Antri teratas dan tidak untuk order Dikerjakan (enam order Dikerjakan dan N sama dengan 5 tetap memberi label ke lima order Antri), peringatan slot penuh, penyesuaian peringkat dengan alasan wajib dan larangan menurunkan order terkunci di bawah order biasa, bandingkan dua evaluasi, grafik tren, serta kriteria nilai order yang disembunyikan dari Supervisor.
+- **Kunci order:** kunci manual dengan alasan wajib, tanggal berakhir, satu baris log untuk tiap pasang dan lepas, kunci otomatis yang mengikuti status (termasuk order hasil impor), pelepasan saat Selesai atau Dibatalkan, dan hak akses Manajer serta Pimpinan.
 - **Data demo:** jumlah dan sebaran data, kriteria awal dan skalanya, nilai penilaian demo, dan setiap halaman terbuka tanpa kosong untuk keempat peran.
 
-### 9.3 Menjalankan sebagian tes
+### 10.3 Menjalankan sebagian tes
 
 Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama tes, misalnya:
 
@@ -1102,7 +1326,7 @@ Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama te
 php artisan test --compact --filter="order"
 ```
 
-## 10. Jika Ada Masalah
+## 11. Jika Ada Masalah
 
 **Halaman tidak bisa dibuka atau muncul "gagal terhubung".** Pastikan perintah `php artisan serve --port=8001` masih berjalan di terminal dan alamatnya `http://localhost:8001/admin`.
 
@@ -1120,15 +1344,19 @@ php artisan test --compact --filter="order"
 
 **Semua baris ditolak saat memeriksa berkas.** Baca pesan di bagian Hasil pemeriksaan. Penyebab paling sering: kode pelanggan atau produk belum ada di Data Master, atau judul kolom di baris pertama diubah. Unduh ulang templat dan salin data Anda ke dalamnya.
 
+**Tombol Terapkan prioritas atau Ajukan tidak tampil.** Tombol itu hanya tampil pada status dan peran yang tepat: Ajukan untuk Manajer pada Draf, Setujui dan Tolak untuk Pimpinan pada Diajukan, Terapkan pada Disetujui dan hanya untuk evaluasi terbaru.
+
+**Pesan "Order terkunci tidak boleh turun ke bawah order biasa".** Lepas kunci order itu lebih dulu di Order Produksi, atau pindahkan ke peringkat yang masih di atas semua order biasa.
+
 **Tombol Jalankan Perhitungan pudar dan tidak bisa ditekan.** Baca tulisan merah di bagian Kesiapan data. Penyebabnya total bobot belum 100%, skala nilai sebuah kriteria belum lengkap, atau belum ada order Antri atau Dikerjakan.
 
 **Tombol Impor sekarang tidak muncul.** Tombol itu baru tampil setelah Periksa berkas dan hanya bila ada sedikitnya satu baris yang benar.
 
 **Tes otomatis gagal terhubung.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala.
 
-## 11. Lampiran: Ringkasan Hak Akses
+## 12. Lampiran: Ringkasan Hak Akses
 
-Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 6.
+Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 7.
 
 | Kegiatan | Admin | Manajer | Supervisor | Pimpinan |
 |---|---|---|---|---|
@@ -1147,4 +1375,10 @@ Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 6.
 | Lihat nilai order dalam rupiah | Ya | Ya | Tidak | Ya |
 | Impor dan ekspor Excel | Ya | Ya | Tidak | Tidak |
 | Jalankan perhitungan SAW | Tidak | Ya | Tidak | Tidak |
+| Lihat daftar dan rincian hasil evaluasi | Ya | Ya | Ya | Ya |
+| Ajukan evaluasi untuk disetujui | Tidak | Ya | Tidak | Tidak |
+| Setujui atau tolak evaluasi | Tidak | Tidak | Tidak | Ya |
+| Sesuaikan peringkat, terapkan prioritas, batalkan evaluasi | Tidak | Ya | Tidak | Ya |
+| Pasang dan lepas kunci manual order | Tidak | Ya | Tidak | Ya |
+| Lihat kriteria nilai order (rupiah) di hasil evaluasi | Ya | Ya | Tidak | Ya |
 | Ganti nama dan kata sandi sendiri | Ya | Ya | Ya | Ya |

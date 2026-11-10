@@ -58,6 +58,23 @@ Peringkat sistem murni dari skor. Peringkat akhir disusun tiga kelompok beruruta
 - Pengaturan dibaca dari `settings` dengan bawaan: `max_wait_days` 7, `lock_in_progress` aktif, `top_n_priority` 5, `stale_value_days` 3. Salinannya disimpan di `settings_snapshot`.
 - Halaman Jalankan Perhitungan hanya untuk Manajer. Tabel peringkat di halaman itu bersifat sementara sampai halaman evaluasi (P7-01 dan P7-02) ada. Salinan order tidak memuat harga, tetapi `raw_values` kriteria C6 memuat rupiah: tampilan evaluasi untuk Supervisor wajib menyembunyikannya.
 
+## Hasil, persetujuan, dan kunci (Fase 7)
+
+- Alur status: Draf, Diajukan, Disetujui, Diterapkan, serta Dibatalkan. Evaluasi yang ditolak kembali ke Draf dengan `rejection_note` yang terbaca di halaman, dan catatan itu dikosongkan saat diajukan lagi. Pengaturan `approval_required` bawaannya aktif. Bila dimatikan, Draf bisa langsung diterapkan dan tombol Ajukan tidak ada.
+- Peran (EvaluationPolicy): ajukan oleh Manajer, setujui dan tolak oleh Pimpinan, terapkan, sesuaikan peringkat, dan batalkan oleh Manajer dan Pimpinan, lihat oleh semua. Batalkan adalah keputusan perancang: PRD menyebut status Dibatalkan tetapi tidak menyebut siapa yang membatalkan. Hanya evaluasi yang belum diterapkan yang bisa dibatalkan.
+- Aturan peran dan status dijaga di server (`EvaluationWorkflow`, `EvaluationAdjuster`, `OrderLocker`) lewat Gate. Predikat status ada di model `Evaluation` (`allowsSubmit`, `allowsDecision`, `allowsApply`, `allowsAdjust`, `allowsCancel`) dan dipakai juga untuk menampilkan tombol.
+- Terapkan: N order Antri teratas pada peringkat akhir mendapat label Prioritas Utama. N dibaca dari `top_n` yang tersimpan di evaluasi, status Antri dibaca dari order saat diterapkan, dan semua order lain yang masih berlabel dikembalikan ke Normal. Hanya evaluasi terbaru yang tidak Dibatalkan yang bisa diterapkan. Tidak ada kolom baru di tabel order.
+- Slot dihitung `PriorityPlan`. Peringatan "slot penuh" muncul bila order Antri yang dikunci manual ditambah yang dieskalasi sudah sebanyak N atau lebih. Di halaman evaluasi, status Antri dibaca dari salinan order di evaluasi.
+- Penyesuaian peringkat: pindah ke peringkat yang dipilih, order lain bergeser. Alasan wajib dan disimpan di order yang dipindah, peringkat sistem tidak berubah, hanya pada Draf atau Diajukan. Order Terkunci selalu harus berada di atas semua order Biasa, jadi order terkunci tidak boleh turun di bawah order biasa dan order biasa tidak boleh naik di atas order terkunci. Order Eskalasi boleh naik di atas order terkunci. Tiap penyesuaian tercatat di log.
+- Kunci otomatis dipasang oleh hook `saving` di model `ProductionOrder`, jadi berlaku untuk formulir, ubah status, dan impor. Menjadi Dikerjakan memasang kunci otomatis (menggantikan kunci manual bila ada), kembali ke Antri melepas kunci otomatis saja, dan menjadi Selesai atau Dibatalkan melepas semua kunci dan mengembalikan label Prioritas Utama ke Normal. Tidak berjalan bila `lock_in_progress` mati.
+- Kunci manual lewat `OrderLocker`: hanya Manajer dan Pimpinan, alasan wajib saat pasang dan lepas, tanggal berakhir boleh kosong tetapi tidak boleh sebelum hari ini, hanya untuk order yang masih terbuka dan belum terkunci. Kunci otomatis tidak dilepas dengan tangan. Tiap aksi menulis satu baris log (`order.locked` atau `order.unlocked`) dan memakai `saveQuietly` supaya tidak ada baris `order.updated` ganda.
+- `isLocked()` dan scope `locked()` tidak menghitung kunci manual yang tanggal berakhirnya sudah lewat. Mesin evaluasi memakai aturan yang sama lewat `lockIsActive()`.
+- Label Prioritas Utama tampil sebagai badge kedua di sel Status daftar order, bukan kolom baru, supaya muat di 1366 piksel. Kolom Produk disembunyikan bawaannya karena tabel order sebelumnya sudah lebih lebar dari 1366 piksel dengan menu kiri terbuka. Kolom Prioritas tetap ada dan tersembunyi.
+- Halaman Hasil Evaluasi bisa dilihat semua peran. Supervisor tidak melihat kriteria nilai order (C6) di tab mana pun, dan di tab yang terdampak ada catatan bahwa kriteria itu tidak ditampilkan.
+- Bandingkan evaluasi tidak punya menu sendiri, dibuka dari daftar dan dari halaman evaluasi. Naik berarti peringkat akhir lebih baik di evaluasi "sesudah".
+- Grafik tren (`OrderRankTrendChart`) berada di infolist halaman order, sumbu peringkat dibalik (peringkat 1 di atas), evaluasi Dibatalkan tidak ikut.
+- Notifikasi N1 sampai N10 dan pemantauan order Tertahan belum dibuat (Fase 8 dan 9).
+
 ## Hak akses
 
 Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
@@ -77,10 +94,10 @@ Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer P
 
 ## Sengaja belum dibuat atau ditunda
 
-- Kunci otomatis saat status berubah ke Dikerjakan, dan pelepasan saat selesai atau batal (P7-08). Order demo sudah terkunci lewat data awal, tetapi order yang diimpor atau diubah statusnya dengan tangan belum otomatis terkunci, jadi belum masuk kelompok Terkunci saat dihitung.
-- Daftar dan detail evaluasi, penyesuaian peringkat, persetujuan, penerapan Prioritas Utama, bandingkan evaluasi, dan grafik tren (Fase 7). Pemantauan order Tertahan (Fase 8 dan 9), opsi "wajib lengkap", dan notifikasi eskalasi juga belum ada.
+- Pemantauan order Tertahan (Fase 8 dan 9), opsi "wajib lengkap", notifikasi (termasuk N1 sampai N10), dan evaluasi terjadwal belum ada. Pengaturan `approval_required`, `top_n_priority`, `max_wait_days`, dan `lock_in_progress` belum punya halaman, nilainya bawaan dari kode sampai P9-02.
+- Kunci otomatis tetap ditampilkan walau `lock_in_progress` dimatikan, sedangkan mesin evaluasi mengabaikannya. Itu baru relevan setelah halaman pengaturan ada.
 - Tabel `activity_logs` dan `settings` dimajukan dari Fase 9 dengan isi minimal. Halaman log (P9-01) dan halaman pengaturan (P9-02) belum ada. `stale_value_days`, `max_wait_days`, `lock_in_progress`, dan `top_n_priority` dibaca dari tabel `settings` dengan bawaan di kode.
-- Kolom peringkat terakhir, bagian hasil di detail order, dan grafik tren menyusul di Fase 7 (datanya sudah tersimpan di `evaluation_items`).
+- Kolom peringkat terakhir di daftar order belum ada. Grafik tren sudah ada di detail order.
 - Angka demo "4 belum lengkap, 4 kedaluwarsa" hanya benar pada hari data di-seed, karena tanggal di seeder relatif terhadap hari ini.
 
 ## Batasan teknis yang disepakati

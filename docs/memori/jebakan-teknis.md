@@ -41,6 +41,18 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Item evaluasi disisipkan massal lewat `insert()` sehingga tidak melewati penjaga model. Jangan memakai jalur itu untuk mengubah data yang sudah tersimpan.
 - Kelompok Terkunci menurut kolom `lock_type`. Order Dikerjakan yang kolomnya masih `none` (hasil impor atau ubah status tangan) dihitung Biasa sampai P7-08 selesai.
 
+## Fase 7
+
+- Widget di folder `app/Filament/Widgets` otomatis masuk ke dasbor. Widget yang hanya untuk satu halaman harus memakai `$isDiscovered = false`.
+- Widget yang dipasang di halaman tampil sebagai komponen Livewire terpisah dan dimuat belakangan. Di tes pakai `assertSeeLivewire(...)` untuk halamannya dan `Livewire::test(Widget::class, ['record' => ...])` untuk isinya. Widget footer halaman resource tampil sesudah relation manager, jadi grafik di tengah halaman dipasang lewat `Livewire::make` di infolist.
+- `forceFill` pada atribut yang belum dimuat mengubahnya dari tidak ada menjadi null, dan riwayat order menulis "kosong menjadi kosong". Kosongkan kolom hanya bila isinya tidak null.
+- Aksi yang ditulis ke log secara eksplisit (kunci order) memakai `saveQuietly`, kalau tidak trait `LogsActivity` menulis baris `order.updated` kedua.
+- Factory memberi harga dan urgensi pelanggan acak, sehingga skor dan peringkat ikut acak. Tes yang bergantung pada urutan peringkat harus menetapkan `unit_price`, `quantity`, dan urgensi (`Customer::factory()->urgency(3)`).
+- Callout peringatan slot tampil dua kali (di atas tab dan di tab Peringatan). Tes yang memeriksa keberadaannya harus menghitung kemunculannya, kalau tidak merusak salah satunya tidak terdeteksi.
+- Server pengembangan bisa lambat: pemberitahuan sesudah aksi bisa muncul sekitar tiga detik kemudian. Skrip Playwright perlu menunggu cukup lama sebelum membaca `.fi-no-notification` atau mengambil gambar.
+- Mengukur muat tidaknya tabel di 1366 piksel: bandingkan `scrollWidth` dan `clientWidth` elemen `.fi-ta-content-ctn` (harus sama). Lebar halaman (`documentElement`) tidak menangkap tabel yang bergeser di dalam kartunya.
+- Sumbu peringkat di grafik dibalik (peringkat 1 di atas), jadi garis yang naik berarti order naik di daftar.
+
 ## Tangkapan layar dan docx
 
 - Batas masuk 5 kali per menit. Skrip tangkap layar yang dijalankan beruntun harus diberi jeda sekitar 70 detik, atau login akan ditolak.
@@ -49,4 +61,5 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Dua build docx yang berjalan bersamaan saling menimpa berkas. Jalankan satu per satu.
 - Tangkapan layar harus diambil sesudah `php artisan migrate:fresh --seed`, supaya angka di gambar sama dengan angka di teks panduan.
 - Membangun docx butuh LibreOffice dan PyMuPDF (`pip install pymupdf`). Di mesin pemilik proyek keduanya baru dipasang saat Fase 6 (LibreOffice lewat winget). Jangan menjalankan `bangun.sh` selagi pemasang LibreOffice masih berjalan, percobaan pertama berakhir tanpa membangun apa pun.
+- `tangkap-layar/ambil-ulang-daftar-order.js` mengambil ulang gambar daftar order Fase 2 dan 5 (09, 09a, 10, 11, 17, 18, 40) dan harus dijalankan tepat sesudah `migrate:fresh --seed`, sebelum ada evaluasi. `fase7.js` memakai akun semua peran, menyimpan dua evaluasi, mengunci order, dan mengambil ulang gambar 34 dan 35. Jalankan `migrate:fresh --seed` sesudahnya.
 - Skrip `tangkap-layar/fase6.js` mengubah data (tanggal masuk ORD-2026-0021, menonaktifkan C7, menyimpan evaluasi). Jalankan `migrate:fresh --seed` sesudahnya.
