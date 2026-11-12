@@ -34,6 +34,12 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Pint bisa mengubah nama kelas pada type hint `Testable`. Jalankan Pint lalu jalankan tes lagi.
 - Mutasi lewat regex di PHP rawan gagal diterapkan karena `$user` ikut diinterpolasi. Ubah berkas dengan skrip yang mengganti string tepat, dan pastikan perubahan benar-benar terjadi sebelum menjalankan tes.
 
+## Notifikasi dan PowerShell
+
+- `Notification::sendToDatabase()` milik Filament memakai `notify()`, dan kelas `DatabaseNotification`-nya `ShouldQueue`. Dengan `QUEUE_CONNECTION=database` notifikasi hanya masuk tabel `jobs` dan tidak pernah sampai ke lonceng tanpa queue worker. Tes tidak menangkapnya karena `phpunit.xml` memakai antrean `sync`. Kirim dengan `$user->notifyNow($notification->toDatabase())`. Tes `NotificationTest` memakai antrean `database` untuk menjaga ini.
+- Dua notifikasi dari satu perhitungan tersimpan pada detik yang sama, dan id-nya UUID. Tes jangan bergantung pada urutan atau `first()`, cari notifikasi menurut `data.viewData.code`.
+- `Set-Content -Encoding utf8` di PowerShell 5.1 menambah BOM. Berkas PHP ber-BOM gagal dengan "Namespace declaration statement has to be the very first statement". Ubah berkas lewat Bash (`sed`) atau alat Edit.
+
 ## Evaluasi
 
 - Model yang gagal `update()` karena penjaga kekekalan tetap kotor. Di tes, lakukan perubahan yang diizinkan lewat `$model->fresh()`.
@@ -70,6 +76,7 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Kelas Tailwind yang hanya ada di view Blade buatan sendiri (misalnya `grid-cols-2`) tidak ada di CSS Filament yang sudah dikompilasi. Untuk view widget dan laporan, pakai blok `<style>` dengan variabel `--gray-*` seperti di `table.blade.php` dan `latest-evaluation.blade.php`.
 - dompdf: pakai `@page` dan CSS sederhana (tanpa variabel CSS, flex, atau grid), logo sebagai data URI, `thead { display: table-header-group }` agar judul kolom berulang. Nomor halaman digambar lewat `$canvas->page_text()` setelah `render()`, jangan memakai skrip PHP di dalam view.
 - Heredoc besar di Bash (lebih dari beberapa puluh baris, atau memuat tanda petik rumit) gagal dengan "unexpected EOF". Tulis berkas lewat alat Write.
-- XAMPP MariaDB tidak menyala sendiri setelah komputer dimulai ulang. Bila semua tes gagal dengan "connection refused", nyalakan `C:\xampp\mysql\bin\mysqld.exe` atau lewat panel XAMPP.
+- XAMPP MariaDB tidak menyala sendiri setelah komputer dimulai ulang. Bila semua tes gagal dengan "connection refused", nyalakan `C:\xampp\mysql\bin\mysqld.exe` atau lewat panel XAMPP. Gejalanya bisa juga tes yang diam bermenit-menit tanpa keluaran apa pun. Folder MySQL Laragon di mesin ini hanya berisi `my.ini`, bukan server.
 - `fase8.js` dan `fase8b.js` butuh data dari `migrate:fresh --seed` ditambah `db:seed --class=DemoEvaluationSeeder`, dan satu evaluasi yang diajukan (`EvaluationWorkflow::submit`) agar bagian Menunggu persetujuan Pimpinan terisi. `fase8b.js` mengambil ulang gambar 03 dan 16. Skrip ini menyimpan unduhan ke `tangkap-layar/berkas-uji/unduhan`. Jalankan `migrate:fresh --seed` sesudahnya.
+- `fase9.js` butuh `migrate:fresh --seed`, `evaluation:run-scheduled --force`, dan satu evaluasi yang diajukan (perintah lengkap di kepala skrip). Skrip mengubah dan mengembalikan jumlah Prioritas Utama. Gambar Fase 9 bernomor 100 sampai 106 karena 90 sampai 92 sudah dipakai gambar PDF Fase 8.
 - Skrip `tangkap-layar/fase6.js` mengubah data (tanggal masuk ORD-2026-0021, menonaktifkan C7, menyimpan evaluasi). Jalankan `migrate:fresh --seed` sesudahnya.

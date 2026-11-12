@@ -91,13 +91,24 @@ Peringkat sistem murni dari skor. Peringkat akhir disusun tiga kelompok beruruta
 - `DemoEvaluationSeeder` tidak ikut seed bawaan: lima evaluasi pada lima hari yang disetujui dan diterapkan, dijalankan manual agar dasbor terisi dan keadaan kosong Bab 8 dan 9 tetap bisa dipelajari.
 - Widget dasbor tidak lazy dan dasbor bawaan Filament diganti kelas `Dashboard` sendiri. Widget sambutan dihapus.
 
+## Log, pengaturan, jadwal, dan notifikasi (Fase 9)
+
+- Pengaturan (F15): satu halaman `SystemSettingsPage` (slug pengaturan). Admin mengubah semua, Pimpinan hanya aturan keputusan dan perlindungan order lama (`SystemSettings::DECISION_KEYS`). Kunci yang tidak boleh diubah ditolak di server oleh `SystemSettings::save`, bukan hanya disembunyikan. Satu simpan menulis satu baris log `setting.updated` berisi nilai lama dan baru, dan tidak menulis apa pun bila tidak ada yang berubah.
+- Aturan silang: `held_min_days` harus lebih kecil dari `max_wait_days`, supaya peringatan Tertahan muncul sebelum eskalasi.
+- Pengaturan tambahan yang tidak disebut PRD: `near_deadline_days` (bawaan 3, bagian Tampilan, hanya Admin) untuk filter, kartu, dan warna sisa hari. Opsi "wajib lengkap" (K-03) dibuat sebagai `incomplete_orders`: nilai terburuk dengan peringatan (bawaan) atau dikecualikan dari perhitungan.
+- Evaluasi terjadwal (F16): `evaluation:run-scheduled` dipanggil penjadwal setiap menit. Perintah memutuskan sendiri: tidak jalan sebelum `schedule_time`, sekali sehari (`schedule_last_run`), tetap jalan bila menit tepatnya terlewat, tidak mencoba ulang setiap menit setelah gagal. `--force` mengabaikan jam dan sakelar tetapi tetap dihitung sebagai jatah hari itu. Hasilnya Draf, pemicu Terjadwal, `evaluated_by` null (tampil "Sistem (terjadwal)"), dan tetap lewat persetujuan. Order belum lengkap dan kedaluwarsa dikonfirmasi otomatis karena tidak ada orang yang bisa mengonfirmasi. Bila tidak ada order aktif atau perhitungan terblokir: tidak ada evaluasi, satu baris log (`evaluation.schedule_skipped` atau `schedule_failed`) dan notifikasi N7.
+- Notifikasi (F17, PRD Bab 19): notifikasi basis data Filament dengan lonceng (polling 30 detik). Kode N1 sampai N10 disimpan di `viewData.code`. Penerima: N1 Pimpinan, N2 dan N3 Manajer yang mengajukan, N4 Supervisor, N5 dan N6 Manajer, N7 Admin dan Manajer, N8 sampai N10 Manajer dan Pimpinan. Hanya akun aktif. N8 dan N9 hanya untuk order yang baru tertahan atau baru dieskalasi dibanding sebelum perhitungan. Notifikasi dikirim sesudah perubahan tersimpan, di dalam `rescue()`, sehingga kegagalan kirim tidak membatalkan langkah. Pembatalan evaluasi tidak memberi notifikasi.
+- Notifikasi disimpan langsung (`notifyNow`), tidak lewat antrean, karena shared hosting tidak punya queue worker. `notifications:prune` menghapus yang lebih tua dari 30 hari setiap pukul 01.00.
+- Log aktivitas (F14): halaman `ActivityLogResource` (slug log-aktivitas) hanya baca, untuk Admin dan Pimpinan. Riwayat satu order di detail order tetap terlihat semua peran. Yang dicatat: masuk dan keluar (gagal masuk tidak), order, kriteria dan bobot, skala (hanya rentang yang berubah), nilai penilaian (dengan alasan bila urgensi ditimpa), langkah evaluasi, jadwal, dan pengaturan. Kolom yang tidak punya nilai lama, atau nilainya sama, ditulis sebagai keterangan ("Alasan: ...") dan bukan "kosong menjadi ...".
+
 ## Hak akses
 
-Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
+Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 14. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
 
 - Supervisor tidak boleh melihat rupiah. Disembunyikan di detail order, kolom harga produk, kolom C6 di matriks penilaian, riwayat perubahan order, dan riwayat nilai C6.
 - Pengguna tidak dihapus, hanya dinonaktifkan. Admin terakhir tidak boleh dinonaktifkan atau diubah perannya. Tidak boleh menonaktifkan diri sendiri.
 - Impor dan ekspor hanya Admin dan Manajer.
+- Log Aktivitas dan Pengaturan hanya Admin dan Pimpinan (Pimpinan sebagian pengaturan saja).
 - Lima kali gagal masuk dalam satu menit memicu jeda 60 detik.
 
 ## Impor dan ekspor Excel (Fase 5)
@@ -110,9 +121,8 @@ Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 10. Peran: Admin, Manajer P
 
 ## Sengaja belum dibuat atau ditunda
 
-- Opsi "wajib lengkap", notifikasi (termasuk N1 sampai N10), dan evaluasi terjadwal belum ada. Pengaturan `approval_required`, `top_n_priority`, `max_wait_days`, dan `lock_in_progress` belum punya halaman, nilainya bawaan dari kode sampai P9-02.
-- Kunci otomatis tetap ditampilkan walau `lock_in_progress` dimatikan, sedangkan mesin evaluasi mengabaikannya. Itu baru relevan setelah halaman pengaturan ada.
-- Tabel `activity_logs` dan `settings` dimajukan dari Fase 9 dengan isi minimal. Halaman log (P9-01) dan halaman pengaturan (P9-02) belum ada. `stale_value_days`, `max_wait_days`, `lock_in_progress`, dan `top_n_priority` dibaca dari tabel `settings` dengan bawaan di kode.
+- Kunci otomatis tetap ditampilkan walau `lock_in_progress` dimatikan, sedangkan mesin evaluasi mengabaikannya.
+- Semua pengaturan dibaca dari tabel `settings` dengan bawaan di kode (`EvaluationSettings`, `SystemSettings`). `Setting::get` tidak menyimpan hasil di memori, jadi pembacaan per baris tabel dibungkus `once()`.
 - Kolom peringkat terakhir di daftar order belum ada. Grafik tren sudah ada di detail order.
 - Angka demo "4 belum lengkap, 4 kedaluwarsa" hanya benar pada hari data di-seed, karena tanggal di seeder relatif terhadap hari ini.
 

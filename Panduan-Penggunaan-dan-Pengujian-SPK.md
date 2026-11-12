@@ -3,9 +3,9 @@
 | Informasi | Isi |
 |---|---|
 | Aplikasi | SPK Prioritas Produksi (studi kasus PT Weba International) |
-| Versi dokumen | 1.6 |
-| Tanggal | 10 November 2026 |
-| Cakupan | Fase 0 sampai Fase 8: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order, dasbor, order tertahan, dan laporan PDF serta Excel |
+| Versi dokumen | 1.7 |
+| Tanggal | 13 November 2026 |
+| Cakupan | Fase 0 sampai Fase 9: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order, dasbor, order tertahan, laporan PDF serta Excel, log aktivitas, pengaturan sistem, evaluasi terjadwal, dan notifikasi |
 | Alamat lokal | http://localhost:8001/admin |
 
 ## 1. Tentang Dokumen Ini
@@ -23,7 +23,7 @@ Setiap pengujian ditulis dengan urutan yang sama.
 1. **Tujuan** menjelaskan apa yang sedang dibuktikan.
 2. **Masuk sebagai** menyebut akun yang dipakai.
 3. **Langkah** adalah urutan klik yang harus diikuti, satu per satu.
-4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 12.
+4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 13.
 
 Kerjakan pengujian berurutan dari atas. Beberapa pengujian mengubah data, misalnya menonaktifkan akun. Di bagian itu ada petunjuk untuk mengembalikannya. Bila data sudah terlanjur berantakan, data demo bisa dibuat ulang seperti di Bagian 2.2.
 
@@ -38,12 +38,7 @@ Semua akun memakai kata sandi `password`.
 
 ### 1.4 Yang belum ada di fase ini
 
-Supaya tidak bingung saat mencoba, berikut hal yang memang belum dibuat dan baru hadir di fase berikutnya.
-
-- Profil perusahaan untuk kop laporan (nama, alamat, telepon, logo) belum punya halaman pengaturan. Kop memakai nama bawaan PT Weba International, dan alamat serta telepon baru muncul setelah halaman pengaturan dibuat di Fase 9 (Uji 8.9 menunjukkan cara mengisinya lewat perintah).
-- Pengaturan sistem (persetujuan Pimpinan wajib atau tidak, jumlah Prioritas Utama, batas tunggu 7 hari, kunci otomatis) belum punya halaman. Semuanya memakai nilai bawaan. Halamannya dibuat di Fase 9.
-- Notifikasi (lonceng) dan evaluasi terjadwal baru ada di Fase 9.
-- Halaman log aktivitas lengkap baru ada di Fase 9. Yang sudah ada hanya riwayat perubahan di halaman detail order.
+Semua fitur yang direncanakan sudah dibuat sampai Fase 9. Fase berikutnya (Fase 10) berisi pengujian dan validasi dengan data, misalnya membandingkan hasil hitung aplikasi dengan hitungan manual dan menguji batas tunggu 5, 7, dan 10 hari. Fase itu tidak menambah menu baru.
 
 ## 2. Menyiapkan Aplikasi di Komputer Lokal
 
@@ -68,7 +63,7 @@ Langkah ini membuat semua tabel dari awal dan mengisinya dengan data contoh: emp
 php artisan migrate:fresh --seed
 ```
 
-**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 12.
+**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 13.
 
 Tanggal pada order demo dibuat relatif terhadap hari ini. Jadi beberapa order selalu terlambat dan beberapa selalu hampir jatuh tempo, kapan pun data dibuat. Nilai manual penilaian juga dibuat dengan usia yang berbeda, ada yang baru dan ada yang sudah lima hari.
 
@@ -1514,7 +1509,7 @@ PDF berukuran A4 mendatar. Di bagian atas ada **kop**: nama perusahaan dengan ga
 **Tujuan:** memastikan kop laporan mengikuti profil perusahaan.
 **Masuk sebagai:** Manajer.
 
-Halaman pengaturan profil perusahaan baru dibuat di Fase 9. Sementara itu, nilainya bisa diisi lewat perintah berikut di terminal folder `dss`.
+Sejak Fase 9, profil perusahaan diisi Admin di halaman **Pengaturan**, bagian **Profil perusahaan** (Uji 9.1). Masuk sebagai Admin, isi Alamat dengan *Jl. Industri Sepatu No. 12, Sidoarjo, Jawa Timur* dan Telepon dengan *031-5550100*, lalu simpan. Cara lama lewat terminal tetap bisa dipakai:
 
 ```
 php artisan tinker --execute="App\Models\Setting::put('company_address', 'Jl. Industri Sepatu No. 12, Sidoarjo, Jawa Timur'); App\Models\Setting::put('company_phone', '031-5550100');"
@@ -1524,7 +1519,7 @@ php artisan tinker --execute="App\Models\Setting::put('company_address', 'Jl. In
 
 **Hasil yang diharapkan:** di bawah nama perusahaan muncul dua baris kecil: alamat dan "Telepon 031-5550100" (lihat gambar di Uji 8.6). Sebelum perintah dijalankan, kop hanya memuat nama **PT Weba International**, yaitu nama bawaan. Nama bisa diganti dengan kunci `company_name`. Alamat atau telepon yang kosong tidak ditampilkan sama sekali.
 
-**Mengembalikan data:** hapus nilai itu dengan `php artisan tinker --execute="App\Models\Setting::whereIn('key', ['company_address', 'company_phone'])->delete();"`, atau buat ulang data demo.
+**Mengembalikan data:** kosongkan Alamat dan Telepon di halaman Pengaturan, hapus nilai itu dengan `php artisan tinker --execute="App\Models\Setting::whereIn('key', ['company_address', 'company_phone'])->delete();"`, atau buat ulang data demo.
 
 ### 10.11 Uji 8.10: Hak akses laporan dan dasbor
 
@@ -1544,11 +1539,257 @@ php artisan tinker --execute="App\Models\Setting::put('company_address', 'Jl. In
 
 **Mengembalikan data:** tidak ada yang berubah oleh uji ini, kecuali Uji 8.4 langkah 1 yang menambah satu evaluasi. Buat ulang data demo bila ingin mengulang dari awal.
 
-## 11. Menjalankan Pengujian Otomatis
+## 11. Fase 9: Log Aktivitas, Pengaturan, Evaluasi Terjadwal, dan Notifikasi
+
+Bab ini membuktikan empat hal: kegiatan penting tercatat dan bisa ditelusuri di **Log Aktivitas**, aturan sistem bisa diubah di halaman **Pengaturan** dan benar-benar dipakai, perhitungan bisa berjalan sendiri setiap hari pada jam yang diatur, dan pengguna yang perlu bertindak diberi tahu lewat ikon lonceng di kanan atas.
+
+Menu **Log Aktivitas** dan **Pengaturan** ada di grup **Pengaturan** dan hanya tampil untuk Admin dan Pimpinan.
+
+### 11.1 Menyiapkan data
+
+Mulai dari data demo yang bersih, lalu jalankan satu perhitungan terjadwal supaya ada notifikasi untuk dicoba.
+
+```
+php artisan migrate:fresh --seed
+php artisan evaluation:run-scheduled --force
+```
+
+**Hasil yang diharapkan:** baris terakhir berbunyi "Evaluasi terjadwal dibuat: Evaluasi terjadwal (tanggal dan jam) (21 order)." Pilihan `--force` menjalankan perhitungan sekarang juga tanpa menunggu jam yang diatur. Perhitungan paksa ini dihitung sebagai jatah hari ini, jadi jadwal biasa baru berjalan lagi besok.
+
+Notifikasi yang dipakai di bab ini diberi kode supaya mudah dirujuk.
+
+| Kode | Kapan dikirim | Penerima |
+|---|---|---|
+| N1 | Evaluasi diajukan untuk disetujui | Pimpinan |
+| N2 | Evaluasi disetujui | Manajer yang mengajukan |
+| N3 | Evaluasi ditolak, beserta catatannya | Manajer yang mengajukan |
+| N4 | Prioritas diterapkan | Supervisor |
+| N5 | Ada order terlambat saat perhitungan | Manajer |
+| N6 | Ada nilai manual yang kedaluwarsa | Manajer |
+| N7 | Perhitungan terjadwal gagal atau tidak ada order untuk dihitung | Admin dan Manajer |
+| N8 | Ada order yang baru menjadi Tertahan | Manajer dan Pimpinan |
+| N9 | Ada order yang baru masuk kelompok eskalasi | Manajer dan Pimpinan |
+| N10 | Order terkunci dan dieskalasi memakai semua slot Prioritas Utama | Manajer dan Pimpinan |
+
+Notifikasi hanya dikirim ke akun yang aktif. N8 dan N9 hanya menyebut order yang baru tertahan atau baru dieskalasi, jadi order yang sama tidak diberitahukan berulang kali di setiap perhitungan. Notifikasi yang lebih tua dari 30 hari dihapus otomatis setiap malam, baik sudah dibaca maupun belum.
+
+### 11.2 Uji 9.1: Membuka halaman Pengaturan
+
+**Tujuan:** melihat semua pengaturan sistem di satu halaman.
+**Masuk sebagai:** Admin (`admin@spk.test`).
+
+1. Buka menu **Pengaturan** (grup **Pengaturan**).
+
+![Halaman Pengaturan untuk Admin](100-pengaturan-admin.png)
+
+**Hasil yang diharapkan:** halaman berisi lima bagian dengan nilai bawaan.
+
+- **Profil perusahaan:** Nama perusahaan *PT Weba International*, Telepon dan Alamat kosong, dan tempat unggah **Logo** (PNG atau JPG, paling besar 1 MB). Isinya dipakai di kop laporan.
+- **Aturan keputusan:** Jumlah order Prioritas Utama 5, Persetujuan Pimpinan wajib menyala, nilai manual kedaluwarsa setelah 3 hari, dan order yang belum lengkap *Ikut dihitung dengan nilai terburuk dan diberi peringatan*.
+- **Perlindungan order lama:** kunci otomatis untuk order Dikerjakan menyala, batas tunggu maksimum 7 hari, order Tertahan setelah 5 evaluasi berturut-turut dan menunggu minimal 4 hari.
+- **Evaluasi terjadwal:** menyala, jam pelaksanaan 06:00.
+- **Tampilan:** batas "mendekati tenggat" 3 hari.
+
+2. Klik **Simpan pengaturan** tanpa mengubah apa pun.
+
+**Hasil yang diharapkan:** muncul pesan "Tidak ada perubahan untuk disimpan", dan tidak ada baris baru di Log Aktivitas.
+
+### 11.3 Uji 9.2: Isian yang salah ditolak
+
+**Tujuan:** memastikan pengaturan yang saling bertentangan tidak bisa disimpan.
+**Masuk sebagai:** Admin.
+
+1. Di bagian **Perlindungan order lama**, ubah **Order Tertahan setelah menunggu minimal (hari)** menjadi 7, sama dengan batas tunggu maksimum.
+2. Klik **Simpan pengaturan**.
+
+![Isian yang bertentangan ditolak](101-pengaturan-salah.png)
+
+**Hasil yang diharapkan:** kolom itu diberi garis merah dengan pesan "Lama menunggu minimal harus lebih pendek dari batas tunggu maksimum (7 hari), supaya peringatan Tertahan muncul sebelum order dieskalasi." Tidak ada yang tersimpan. Peringatan Tertahan memang harus muncul lebih dulu, sebelum order mencapai batas eskalasi.
+
+3. Coba juga isian di luar batas: Jumlah order Prioritas Utama 0 atau 51, batas tunggu maksimum 0, atau batas mendekati tenggat 15.
+
+**Hasil yang diharapkan:** setiap isian ditolak dengan pesan di bawah kolomnya.
+
+**Mengembalikan data:** muat ulang halaman. Isian yang ditolak tidak pernah tersimpan.
+
+### 11.4 Uji 9.3: Pengaturan benar-benar dipakai
+
+**Tujuan:** membuktikan perubahan pengaturan langsung memengaruhi aplikasi.
+**Masuk sebagai:** Admin, lalu Manajer.
+
+1. Lihat kartu **Mendekati tenggat** di Dasbor. Angkanya 2 dengan keterangan "Tenggat dalam 3 hari".
+2. Buka **Pengaturan**, ubah **Batas "mendekati tenggat" (hari)** menjadi 5, lalu klik **Simpan pengaturan**.
+
+**Hasil yang diharapkan:** muncul pesan "Pengaturan disimpan" dengan keterangan "1 pengaturan diubah dan dicatat di Log Aktivitas."
+
+3. Buka Dasbor lagi.
+
+**Hasil yang diharapkan:** kartu **Mendekati tenggat** menjadi 3 dengan keterangan "Tenggat dalam 5 hari". Di daftar Order Produksi, filter berubah nama menjadi **Mendekati tenggat (5 hari)** dan menampilkan 3 order, sama dengan kartu.
+
+4. Kembali ke **Pengaturan**, ubah **Order yang belum lengkap** menjadi *Dikecualikan dari perhitungan*, lalu simpan. Keluar, lalu masuk sebagai **Manajer** dan buka **Jalankan Perhitungan**.
+
+**Hasil yang diharapkan:** bagian Kesiapan data menampilkan kotak abu-abu **Dikecualikan** berisi 4, dengan penjelasan bahwa order yang belum lengkap tidak mendapat peringkat sampai nilainya dilengkapi. Setelah dihitung, evaluasi baru memuat 17 order, bukan 21. Keempat order yang dikecualikan adalah ORD-2026-0013, ORD-2026-0018, ORD-2026-0023, dan ORD-2026-0025.
+
+Evaluasi yang sudah tersimpan tidak ikut berubah saat pengaturan diganti, karena setiap evaluasi menyimpan salinan pengaturan yang dipakainya (Bab 8).
+
+**Mengembalikan data:** kembalikan batas mendekati tenggat ke 3 dan pilihan order belum lengkap ke nilai terburuk, atau buat ulang data demo.
+
+### 11.5 Uji 9.4: Pengaturan untuk Pimpinan
+
+**Tujuan:** memastikan Pimpinan hanya mengubah aturan keputusan.
+**Masuk sebagai:** Pimpinan (`pimpinan@spk.test`).
+
+1. Buka menu **Pengaturan**.
+
+![Halaman Pengaturan untuk Pimpinan](104-pengaturan-pimpinan.png)
+
+**Hasil yang diharapkan:** hanya dua bagian yang tampil, **Aturan keputusan** dan **Perlindungan order lama**. Keterangan di bawah judul berbunyi "Pengaturan lain hanya bisa diubah Admin." Profil perusahaan, evaluasi terjadwal, dan tampilan tidak terlihat dan tidak bisa diubah Pimpinan, walaupun dikirim lewat cara lain.
+
+2. Ubah **Jumlah order Prioritas Utama** menjadi 6 dan simpan.
+
+**Hasil yang diharapkan:** pesan "Pengaturan disimpan". Perhitungan berikutnya memberi label Prioritas Utama kepada enam order Antri teratas.
+
+**Mengembalikan data:** kembalikan jumlahnya ke 5.
+
+### 11.6 Uji 9.5: Membaca Log Aktivitas
+
+**Tujuan:** menelusuri siapa melakukan apa dan kapan.
+**Masuk sebagai:** Admin.
+
+1. Buka menu **Log Aktivitas** (grup **Pengaturan**).
+
+![Log Aktivitas](102-log-aktivitas.png)
+
+**Hasil yang diharapkan:** daftar kegiatan dengan yang terbaru di atas. Setiap baris memuat **Waktu** sampai detik, **Pengguna** (tertulis *Sistem* untuk perhitungan terjadwal), **Kegiatan** seperti *Masuk*, *Pengaturan diubah*, *Evaluasi diajukan*, *Perhitungan dijalankan*, atau *Nilai penilaian diubah*, **Objek** yang diubah (misalnya *Penilaian ORD-2026-0024, C2*), dan **Perubahan** dalam kalimat biasa seperti "Jumlah Prioritas Utama: 5 menjadi 6" atau "Status: Draf menjadi Diajukan". Keterangan yang bukan perubahan, misalnya alasan atau nama evaluasi, ditulis tanpa kata "menjadi".
+
+Kegiatan yang tercatat: masuk dan keluar, pembuatan dan perubahan order (termasuk status, kunci, dan order yang masuk lewat impor), perubahan kriteria, bobot, dan skala nilai, perubahan nilai penilaian, setiap langkah evaluasi (dihitung, diajukan, disetujui, ditolak, diterapkan, dibatalkan, peringkat disesuaikan), perhitungan terjadwal yang dilewati atau gagal, dan perubahan pengaturan. Percobaan masuk yang gagal tidak dicatat.
+
+2. Klik ikon corong, pilih **Jenis kegiatan** *Pengaturan diubah*.
+
+![Log yang disaring menurut jenis kegiatan](103-log-pengaturan.png)
+
+**Hasil yang diharapkan:** hanya baris perubahan pengaturan yang tersisa, masing-masing dengan nilai lama dan baru.
+
+3. Coba juga saringan **Pengguna** (misalnya Budi Santoso) dan **Tanggal** (Dari tanggal dan Sampai tanggal).
+
+**Hasil yang diharapkan:** daftar hanya memuat kegiatan pengguna itu atau pada rentang tanggal itu. Kolom **Alamat IP** bisa ditampilkan lewat ikon kolom di kanan atas tabel.
+
+4. Perhatikan bahwa tidak ada tombol tambah, ubah, atau hapus.
+
+**Hasil yang diharapkan:** log hanya bisa dibaca. Tidak ada peran yang bisa mengubah atau menghapus catatan.
+
+### 11.7 Uji 9.6: Notifikasi hasil perhitungan
+
+**Tujuan:** memastikan Manajer diberi tahu hal yang perlu ditindaklanjuti setelah perhitungan.
+**Masuk sebagai:** Manajer (`manajer@spk.test`), dengan data dari Bagian 11.1.
+
+1. Perhatikan ikon lonceng di kanan atas. Klik lonceng itu.
+
+![Notifikasi Manajer](106-notifikasi-manajer.png)
+
+**Hasil yang diharapkan:** lonceng bertanda angka 4. Panel **Notifikasi** terbuka di kanan dan berisi empat notifikasi dari perhitungan terjadwal.
+
+- **Ada order terlambat** (N5): 3 order sudah melewati tenggat, dengan tombol **Lihat order terlambat**.
+- **Nilai penilaian perlu diperbarui** (N6): 4 order memiliki nilai manual yang kedaluwarsa, dengan tombol **Buka Penilaian Order**.
+- **Order masuk kelompok eskalasi** (N9): 6 order menunggu lebih dari 7 hari, lima nomor pertama disebut lalu "dan 1 lainnya".
+- **Slot Prioritas Utama penuh** (N10): order terkunci dan dieskalasi sudah memakai semua 5 slot.
+
+2. Klik **Lihat order terlambat**.
+
+**Hasil yang diharapkan:** daftar Order Produksi terbuka dengan filter Terlambat menyala (3 order), dan notifikasi itu ditandai sudah dibaca sehingga angka di lonceng berkurang satu.
+
+3. Buka lonceng lagi, klik **Tandai semua sudah dibaca**, lalu **Bersihkan**.
+
+**Hasil yang diharapkan:** angka di lonceng hilang, lalu panel menjadi kosong. Lonceng memeriksa notifikasi baru setiap 30 detik tanpa perlu memuat ulang halaman.
+
+### 11.8 Uji 9.7: Notifikasi alur persetujuan
+
+**Tujuan:** memastikan setiap langkah persetujuan memberi tahu orang berikutnya.
+
+1. Masuk sebagai **Manajer**, buka **Hasil Evaluasi**, buka evaluasi terjadwal dari Bagian 11.1, lalu klik **Ajukan untuk disetujui**. Keluar.
+2. Masuk sebagai **Pimpinan** dan klik lonceng.
+
+![Notifikasi Pimpinan](105-notifikasi-pimpinan.png)
+
+**Hasil yang diharapkan:** paling atas ada **Evaluasi menunggu persetujuan Anda** (N1) dengan nama evaluasi dan tombol **Tinjau evaluasi** yang membuka rincian evaluasi itu. Pimpinan juga menerima N9 dan N10 dari perhitungan terjadwal, tetapi tidak menerima N5 dan N6 yang khusus untuk Manajer.
+
+3. Klik **Tinjau evaluasi**, lalu **Tolak** dengan catatan "Bobot perlu dicek lagi". Keluar, masuk sebagai Manajer, dan buka lonceng.
+
+**Hasil yang diharapkan:** ada **Evaluasi ditolak** (N3) yang memuat catatan "Bobot perlu dicek lagi".
+
+4. Ajukan lagi sebagai Manajer, setujui sebagai Pimpinan, lalu terapkan sebagai Manajer.
+
+**Hasil yang diharapkan:** Manajer menerima **Evaluasi disetujui** (N2). Setelah diterapkan, Supervisor (`supervisor@spk.test`) menerima **Daftar prioritas baru ditetapkan** (N4) dengan tombol **Lihat daftar order** yang membuka daftar order berfilter Prioritas Utama. Bila Persetujuan Pimpinan wajib dimatikan di Pengaturan, Supervisor tetap menerima N4 saat Manajer menerapkan langsung dari Draf.
+
+5. Batalkan sebuah evaluasi Draf.
+
+**Hasil yang diharapkan:** tidak ada notifikasi yang dikirim untuk pembatalan.
+
+### 11.9 Uji 9.8: Evaluasi terjadwal
+
+**Tujuan:** memastikan perhitungan berjalan sendiri satu kali sehari pada jam yang diatur.
+**Masuk sebagai:** Admin, dengan terminal di folder `dss`.
+
+1. Di **Pengaturan**, ubah **Jam pelaksanaan** menjadi satu atau dua menit dari sekarang, lalu simpan. Pastikan **Evaluasi terjadwal aktif** menyala.
+2. Jalankan penjadwal di terminal dan biarkan terbuka.
+
+```
+php artisan schedule:work
+```
+
+**Hasil yang diharapkan:** setiap menit muncul satu baris yang menjalankan `evaluation:run-scheduled`. Sebelum jam yang diatur, perintah itu tidak berbuat apa-apa. Begitu jamnya tiba, di **Hasil Evaluasi** bertambah satu evaluasi bernama *Evaluasi terjadwal (tanggal dan jam)* dengan pemicu **Terjadwal**, status **Draf**, dan kolom Dijalankan oleh *Sistem (terjadwal)*. Evaluasi ini tetap harus diajukan dan disetujui seperti biasa. Log Aktivitas mencatat *Perhitungan dijalankan* dengan pengguna *Sistem*.
+
+3. Biarkan penjadwal berjalan beberapa menit lagi.
+
+**Hasil yang diharapkan:** tidak ada evaluasi tambahan. Perhitungan terjadwal hanya berjalan sekali sehari. Bila komputer atau server mati tepat pada jamnya, perhitungan tetap berjalan pada menit pertama setelahnya di hari yang sama.
+
+4. Hentikan penjadwal dengan Ctrl dan C. Matikan **Evaluasi terjadwal aktif** bila tidak ingin perhitungan otomatis.
+
+**Hasil yang diharapkan:** selama sakelar mati, perhitungan terjadwal tidak berjalan. Perintah `php artisan evaluation:run-scheduled --force` tetap bisa dipakai untuk menjalankannya dengan tangan.
+
+Bila perhitungan terjadwal tidak bisa berjalan, misalnya karena tidak ada order Antri atau Dikerjakan, atau total bobot belum 100%, tidak ada evaluasi yang dibuat. Admin dan Manajer menerima notifikasi **Perhitungan terjadwal tidak berjalan** (N7) beserta alasannya, dan Log Aktivitas mencatat *Perhitungan terjadwal dilewati* atau *Perhitungan terjadwal gagal*. Perhitungan tidak dicoba ulang setiap menit, melainkan besok pada jam yang sama.
+
+**Mengembalikan data:** kembalikan jam pelaksanaan ke 06:00.
+
+### 11.10 Uji 9.9: Hak akses Log Aktivitas dan Pengaturan
+
+**Tujuan:** memastikan hanya Admin dan Pimpinan yang membuka kedua halaman itu.
+
+1. Masuk sebagai **Manajer**, lalu sebagai **Supervisor**. Perhatikan menu kiri.
+
+**Hasil yang diharapkan:** grup **Pengaturan** dengan menu Log Aktivitas dan Pengaturan tidak ada.
+
+2. Ketik langsung `http://localhost:8001/admin/pengaturan` dan `http://localhost:8001/admin/log-aktivitas` di peramban.
+
+**Hasil yang diharapkan:** keduanya menampilkan halaman **403 Forbidden**.
+
+3. Masuk sebagai **Supervisor** dan buka halaman detail sebuah order.
+
+**Hasil yang diharapkan:** riwayat perubahan order itu tetap tampil di halaman detail (Bab 4), walaupun halaman Log Aktivitas tertutup.
+
+### 11.11 Memasang penjadwal di cPanel
+
+Di komputer lokal penjadwal dijalankan dengan `schedule:work` seperti Uji 9.8. Di hosting cPanel tidak ada terminal yang bisa dibiarkan terbuka, jadi penjadwal dipanggil oleh **Cron Job** setiap menit.
+
+1. Masuk ke cPanel, buka **Cron Jobs**.
+2. Pada **Common Settings**, pilih **Once Per Minute (\* \* \* \* \*)**.
+3. Isi **Command** dengan perintah berikut. Ganti `namapengguna` dan `dss` dengan nama akun cPanel dan folder aplikasi.
+
+```
+cd /home/namapengguna/dss && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+4. Klik **Add New Cron Job**.
+
+**Hasil yang diharapkan:** keesokan harinya, pada jam yang diatur di halaman Pengaturan, muncul evaluasi terjadwal baru di Hasil Evaluasi. Penjadwal yang sama juga menghapus notifikasi yang lebih tua dari 30 hari setiap pukul 01.00.
+
+Bila hosting memakai PHP lain sebagai bawaan, ganti `/usr/local/bin/php` dengan jalur PHP 8.3 yang tertera di cPanel (sering berbentuk `/opt/cpanel/ea-php83/root/usr/bin/php`). Bila hosting tidak mengizinkan Cron setiap menit, jadwal setiap 5 menit tetap bisa dipakai: perhitungan berjalan pada pemanggilan pertama setelah jam yang diatur. Notifikasi tidak membutuhkan antrean (*queue worker*), jadi tidak ada Cron lain yang perlu dipasang.
+
+## 12. Menjalankan Pengujian Otomatis
 
 Selain diuji dengan tangan seperti di atas, aplikasi punya pengujian otomatis yang menjalankan ratusan pemeriksaan dalam hitungan detik. Pengujian ini memakai basis data terpisah bernama `dss_test`, jadi tidak menyentuh data demo Anda.
 
-### 11.1 Cara menjalankan
+### 12.1 Cara menjalankan
 
 1. Pastikan MySQL menyala dan basis data `dss_test` ada.
 2. Di terminal folder `dss`, jalankan perintah berikut.
@@ -1559,9 +1800,9 @@ php artisan test --compact
 
 3. Tunggu sekitar setengah menit.
 
-**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 482 tes dengan 2.721 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
+**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 552 tes dengan 3.010 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
 
-### 11.2 Apa saja yang diuji
+### 12.2 Apa saja yang diuji
 
 - **Masuk dan profil:** login berhasil dan gagal, akun nonaktif, batas lima percobaan, halaman yang tertutup bagi tamu, ganti nama dan kata sandi.
 - **Pengguna:** hak akses Admin, tambah, ubah, nonaktifkan, atur ulang kata sandi, serta aturan Admin terakhir dan larangan menonaktifkan diri sendiri.
@@ -1577,9 +1818,13 @@ php artisan test --compact
 - **Dasbor:** enam kartu angka yang sama dengan hasil filter di daftar asalnya (termasuk tautan tiap kartu), daftar order terlambat terlama, daftar prioritas utama dari evaluasi terakhir yang diterapkan, grafik order per status, bagian persetujuan yang hanya tampil untuk Pimpinan, tombol hitung yang hanya tampil untuk Manajer, serta dasbor tanpa rupiah untuk Supervisor.
 - **Order tertahan:** aturan lima evaluasi berturut-turut di luar lima order Antri teratas dan menunggu empat hari, evaluasi dibatalkan yang tidak dihitung, order Dikerjakan yang tidak memakai tempat, order terkunci atau tidak lagi Antri yang tidak tertahan, pengaturan jumlah evaluasi dan hari, daftar tertahan dan dieskalasi di dasbor, serta filter Tertahan di daftar order.
 - **Laporan:** lima laporan (peringkat, rincian perhitungan, order terlambat, rekap order, riwayat evaluasi) dengan batas periode yang tepat, kop dari pengaturan perusahaan, angka Excel dan PDF yang sama dengan layar, Excel dengan angka dan tanggal sungguhan, skor yang bisa dihitung ulang dari lembar Excel, nama lembar yang valid, teks data yang diloloskan di PDF, periode terbalik ditolak, laporan kosong, kriteria nilai order yang disembunyikan dari Supervisor, dan kinerja laporan 200 dan 1.000 order.
+- **Log aktivitas:** catatan masuk dan keluar (dan tidak untuk masuk yang gagal), perubahan nilai penilaian beserta alasan, perubahan skala yang hanya mencatat rentang yang berubah, satu baris untuk perubahan bobot, langkah evaluasi dalam kalimat biasa, urutan terbaru di atas, saringan pengguna, jenis kegiatan, dan tanggal, log yang tidak bisa diubah atau dihapus, serta halaman yang hanya dibuka Admin dan Pimpinan.
+- **Pengaturan:** nilai bawaan, batas tiap isian, aturan menunggu minimal Tertahan yang harus lebih pendek dari batas tunggu, bagian yang boleh diubah Admin dan Pimpinan (termasuk penolakan di sisi server), pencatatan setiap perubahan, unggah logo, dan pengaruh tiap pengaturan pada perhitungan, dasbor, filter, dan pengecualian order belum lengkap.
+- **Evaluasi terjadwal:** terdaftar di penjadwal, tidak berjalan sebelum jamnya, berjalan pada jam yang diatur atau menit sesudahnya, hanya sekali sehari, berhenti saat sakelar mati, bisa dipaksa, hasil berstatus Draf dengan pemicu Terjadwal, pencatatan dan notifikasi bila tidak ada order atau perhitungan gagal, dan penghapusan notifikasi yang lebih tua dari 30 hari.
+- **Notifikasi:** N1 sampai N10 sampai ke peran yang tepat dan tidak ke peran lain, akun nonaktif yang dilewati, N8 dan N9 yang hanya dikirim untuk order yang baru tertahan atau baru dieskalasi, daftar nomor order yang dipendekkan, notifikasi yang langsung tersimpan tanpa antrean, dan langkah persetujuan atau perhitungan yang tetap tersimpan walaupun pengiriman notifikasi gagal.
 - **Data demo:** jumlah dan sebaran data, kriteria awal dan skalanya, nilai penilaian demo, dan setiap halaman terbuka tanpa kosong untuk keempat peran.
 
-### 11.3 Menjalankan sebagian tes
+### 12.3 Menjalankan sebagian tes
 
 Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama tes, misalnya:
 
@@ -1587,7 +1832,7 @@ Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama te
 php artisan test --compact --filter="order"
 ```
 
-## 12. Jika Ada Masalah
+## 13. Jika Ada Masalah
 
 **Halaman tidak bisa dibuka atau muncul "gagal terhubung".** Pastikan perintah `php artisan serve --port=8001` masih berjalan di terminal dan alamatnya `http://localhost:8001/admin`.
 
@@ -1619,11 +1864,17 @@ php artisan test --compact --filter="order"
 
 **Tombol Impor sekarang tidak muncul.** Tombol itu baru tampil setelah Periksa berkas dan hanya bila ada sedikitnya satu baris yang benar.
 
-**Tes otomatis gagal terhubung.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala.
+**Lonceng tidak pernah berisi notifikasi.** Notifikasi hanya dikirim untuk peristiwa di Bagian 11.1 dan hanya ke peran yang tercantum. Admin, misalnya, hanya menerima N7. Lonceng memeriksa notifikasi baru setiap 30 detik, jadi tunggu sebentar atau muat ulang halaman.
 
-## 13. Lampiran: Ringkasan Hak Akses
+**Evaluasi terjadwal tidak muncul.** Pastikan **Evaluasi terjadwal aktif** menyala di Pengaturan, Cron Job sudah dipasang (Bagian 11.11), dan jam server sesuai. Bila hari itu sudah ada perhitungan terjadwal, termasuk yang dipaksa dengan `--force`, perhitungan berikutnya baru berjalan besok. Lihat juga Log Aktivitas: bila tertulis *Perhitungan terjadwal dilewati* atau *gagal*, alasannya tercantum di kolom Perubahan.
 
-Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 8.
+**Pesan "Lama menunggu minimal harus lebih pendek dari batas tunggu maksimum".** Turunkan isian Order Tertahan setelah menunggu minimal, atau naikkan batas tunggu maksimum, lalu simpan lagi.
+
+**Tes otomatis gagal terhubung atau berhenti tanpa keluaran.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala. Bila MySQL mati, tes bisa diam lama tanpa pesan apa pun sebelum akhirnya gagal.
+
+## 14. Lampiran: Ringkasan Hak Akses
+
+Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 9.
 
 | Kegiatan | Admin | Manajer | Supervisor | Pimpinan |
 |---|---|---|---|---|
@@ -1653,4 +1904,8 @@ Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 8.
 | Lihat bagian Menunggu persetujuan di dasbor | Tidak | Tidak | Tidak | Ya |
 | Lihat order tertahan | Ya | Ya | Ya | Ya |
 | Unduh laporan PDF dan Excel | Ya | Ya | Ya | Ya |
+| Lihat Log Aktivitas | Ya | Tidak | Tidak | Ya |
+| Ubah aturan keputusan dan perlindungan order lama | Ya | Tidak | Tidak | Ya |
+| Ubah profil perusahaan, evaluasi terjadwal, dan tampilan | Ya | Tidak | Tidak | Tidak |
+| Terima notifikasi (lihat tabel di Bagian 11.1) | N7 | N2 sampai N3, N5 sampai N10 | N4 | N1, N8 sampai N10 |
 | Ganti nama dan kata sandi sendiri | Ya | Ya | Ya | Ya |

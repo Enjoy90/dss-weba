@@ -27,9 +27,9 @@ Butuh dua basis data kosong: `dss` dan `dss_test`. Akun demo (kata sandi `passwo
 
 ## Status
 
-Fase 0 sampai 8 dari 12 selesai, 58 dari 72 tugas, 482 tes lulus. Fase 9 (log, pengaturan, penjadwalan) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
+Fase 0 sampai 9 dari 12 selesai, 62 dari 72 tugas, 552 tes lulus. Fase 10 (pengujian dan validasi) belum dimulai. Daftar tugas dan catatan kemajuan ada di `TODO-Pembangunan-SPK.md`, itu sumber kebenaran status. Perbarui bagian ini setiap fase selesai.
 
-Yang sudah ada: masuk dan profil, pengguna, pelanggan, produk, order produksi, kriteria dengan bobot dan skala nilai, matriks penilaian, impor dan ekspor Excel, mesin SAW dan peringkat berkelompok, evaluasi tersimpan, halaman Jalankan Perhitungan (hanya Manajer), daftar dan rincian Hasil Evaluasi (tujuh tab), penyesuaian peringkat, alur ajukan, setujui, tolak, terapkan, label Prioritas Utama di daftar order, kunci manual dan kunci otomatis mengikuti status, bandingkan dua evaluasi, dan grafik tren peringkat di detail order. Yang belum ada: dasbor berisi grafik, laporan, halaman log, halaman pengaturan, evaluasi terjadwal, notifikasi, dan pemantauan order Tertahan.
+Yang sudah ada: masuk dan profil, pengguna, pelanggan, produk, order produksi, kriteria dengan bobot dan skala nilai, matriks penilaian, impor dan ekspor Excel, mesin SAW dan peringkat berkelompok, evaluasi tersimpan, halaman Jalankan Perhitungan (hanya Manajer), daftar dan rincian Hasil Evaluasi (tujuh tab), penyesuaian peringkat, alur ajukan, setujui, tolak, terapkan, label Prioritas Utama di daftar order, kunci manual dan kunci otomatis mengikuti status, bandingkan dua evaluasi, grafik tren peringkat di detail order, dasbor, order Tertahan, laporan PDF dan Excel, Log Aktivitas, halaman Pengaturan, evaluasi terjadwal (`evaluation:run-scheduled` lewat Cron), dan notifikasi N1 sampai N10 di lonceng. Yang belum ada: kolom peringkat terakhir di daftar order, serta pekerjaan Fase 10 dan 11.
 
 ## Dokumen yang jadi acuan
 

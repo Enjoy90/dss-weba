@@ -24,7 +24,7 @@ Format markdown yang dikenali: `#` sebagai judul dokumen, `##` sebagai bab (munc
 
 ## Tangkapan layar
 
-Gambar panduan ada di `gambar-panduan` dengan nomor berurutan per fase (01 sampai 18 fase 1 dan 2, 20 sampai 26 fase 3, 30 sampai 36 fase 4, 40 sampai 44 fase 5). Gambar diagram PRD ada di `gambar-prd`, dibuat oleh `diagram-prd.py` (butuh matplotlib).
+Gambar panduan ada di `gambar-panduan` dengan nomor berurutan per fase (01 sampai 18 fase 1 dan 2, 20 sampai 26 fase 3, 30 sampai 36 fase 4, 40 sampai 44 fase 5, 80 sampai 93 fase 8, 100 sampai 106 fase 9). Periksa nomor yang sudah terpakai sebelum memberi nomor baru. Gambar diagram PRD ada di `gambar-prd`, dibuat oleh `diagram-prd.py` (butuh matplotlib).
 
 Cara mengambil gambar baru untuk fase berikutnya:
 
