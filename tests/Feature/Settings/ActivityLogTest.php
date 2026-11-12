@@ -11,6 +11,7 @@ use App\Models\ProductionOrder;
 use App\Models\User;
 use App\Services\AssessmentWriter;
 use App\Services\CriterionWeights;
+use App\Services\Evaluation\EvaluationService;
 use Database\Seeders\CriteriaSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
@@ -73,7 +74,32 @@ it('logs an urgency override with its reason', function (): void {
 
     $row = ActivityLog::query()->where('action', 'assessment.updated')->first();
 
-    expect($row->changeLines())->toContain('Alasan: kosong menjadi Pelanggan utama minta didahulukan');
+    expect($row->changeLines())->toContain('Alasan: Pelanggan utama minta didahulukan');
+});
+
+it('writes the steps of an evaluation in words, with the list of top orders, on the log page', function (): void {
+    $this->seed(CriteriaSeeder::class);
+    ProductionOrder::factory()->create();
+    $evaluation = app(EvaluationService::class)->run($this->manager, name: 'Evaluasi pagi', acknowledgeWarnings: true);
+    $other = app(EvaluationService::class)->run($this->manager, name: 'Pagi kedua', acknowledgeWarnings: true);
+
+    $submitted = ActivityLog::record('evaluation.submitted', $evaluation, ['status' => 'draft'], ['status' => 'submitted', 'name' => 'Evaluasi pagi'], $this->manager);
+    $applied = ActivityLog::record('evaluation.applied', $other, ['status' => 'approved'], ['status' => 'applied', 'name' => 'Pagi kedua', 'top_n' => 2, 'top_orders' => ['ORD-1', 'ORD-2']], $this->manager);
+    $moved = ActivityLog::record('evaluation.rank_adjusted', $evaluation, ['order' => 'ORD-7', 'final_rank' => 4], ['order' => 'ORD-7', 'final_rank' => 2, 'reason' => 'Mesin siap'], $this->manager);
+
+    expect($submitted->changeLines())->toBe(['Status: Draf menjadi Diajukan', 'Nama: Evaluasi pagi'])
+        ->and($submitted->subjectLabel())->toBe('Evaluasi pagi')
+        ->and($applied->subjectLabel())->toBe('Evaluasi Pagi kedua')
+        ->and($applied->changeLines())->toContain('Order Prioritas Utama: ORD-1, ORD-2')
+        ->and($moved->changeLines())->toBe(['Order: ORD-7', 'Peringkat: 4 menjadi 2', 'Alasan: Mesin siap']);
+
+    $this->actingAs($this->admin);
+
+    Livewire::test(ListActivityLogs::class)
+        ->assertOk()
+        ->assertSee('Draf menjadi Diajukan')
+        ->assertSee('ORD-1, ORD-2')
+        ->assertDontSee('Evaluasi Evaluasi');
 });
 
 it('writes one row with the old and new weight when a weight changes (PRD F14 acceptance)', function (): void {
