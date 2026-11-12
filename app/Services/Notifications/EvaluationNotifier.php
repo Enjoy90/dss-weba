@@ -132,7 +132,7 @@ class EvaluationNotifier
             return;
         }
 
-        Notification::make()
+        $notification = Notification::make()
             ->title($title)
             ->body($body)
             ->icon($icon)
@@ -140,8 +140,13 @@ class EvaluationNotifier
             ->viewData(['code' => $code])
             ->actions([
                 Action::make('open')->label($button)->url($url)->button()->markAsRead(),
-            ])
-            ->sendToDatabase($recipients);
+            ]);
+
+        // Saved right away instead of through the queue: shared hosting has no queue worker, and a queued
+        // notification would never reach the bell there.
+        foreach ($recipients as $recipient) {
+            $recipient->notifyNow($notification->toDatabase());
+        }
     }
 
     /**

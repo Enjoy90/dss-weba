@@ -477,7 +477,8 @@ class ProductionOrderResource extends Resource
 
         return match (true) {
             $days < 0 => 'danger',
-            $days <= SystemSettings::nearDeadlineDays() => 'warning',
+            // Read once per request: this runs for every row of the list.
+            $days <= once(fn (): int => SystemSettings::nearDeadlineDays()) => 'warning',
             default => 'gray',
         };
     }

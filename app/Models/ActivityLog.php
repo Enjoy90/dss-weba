@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\CriterionDirection;
+use App\Enums\EvaluationStatus;
+use App\Enums\EvaluationTrigger;
 use App\Enums\LockType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -93,7 +95,8 @@ class ActivityLog extends Model
         return match (true) {
             $subject instanceof ProductionOrder => 'Order '.$subject->number,
             $subject instanceof Criterion => 'Kriteria '.$subject->code,
-            $subject instanceof Evaluation => 'Evaluasi '.$subject->name,
+            // Evaluation names usually start with "Evaluasi" already, so the word is not repeated.
+            $subject instanceof Evaluation => str_starts_with(mb_strtolower($subject->name), 'evaluasi') ? $subject->name : 'Evaluasi '.$subject->name,
             $subject instanceof Assessment => 'Penilaian '.($subject->order?->number ?? '?').', '.($subject->criterion?->code ?? '?'),
             default => '-',
         };
@@ -145,6 +148,14 @@ class ActivityLog extends Model
             }
 
             $old = ($this->old_values ?? [])[$field] ?? null;
+
+            // A value without an old one, or one that stayed the same, is context such as a reason or a
+            // name, not a change: it shows on its own instead of as "kosong menjadi ...".
+            if (! array_key_exists($field, $this->old_values ?? []) || $old === $new) {
+                $lines[] = self::fieldLabel($field).': '.self::displayValue($field, $new);
+
+                continue;
+            }
 
             $lines[] = sprintf(
                 '%s: %s menjadi %s',
@@ -203,6 +214,13 @@ class ActivityLog extends Model
             'schedule_time' => 'Jam evaluasi terjadwal',
             'near_deadline_days' => 'Batas mendekati tenggat (hari)',
             'incomplete_count' => 'Jumlah order belum lengkap',
+            'top_n' => 'Jumlah Prioritas Utama',
+            'top_orders' => 'Order Prioritas Utama',
+            'rejection_note' => 'Catatan penolakan',
+            'order' => 'Order',
+            'final_rank' => 'Peringkat',
+            'trigger' => 'Pemicu',
+            'order_count' => 'Jumlah order',
         ][$field] ?? $field;
     }
 
@@ -216,12 +234,17 @@ class ActivityLog extends Model
             return $value ? 'ya' : 'tidak';
         }
 
+        if (is_array($value)) {
+            return $value === [] ? 'kosong' : implode(', ', array_map(fn (mixed $item): string => is_scalar($item) ? (string) $item : json_encode($item), $value));
+        }
+
         if ($field === 'incomplete_orders') {
             return $value === 'exclude' ? 'dikecualikan' : 'ikut dengan nilai terburuk';
         }
 
         return match ($field) {
-            'status' => OrderStatus::tryFrom((string) $value)?->label() ?? (string) $value,
+            'status' => OrderStatus::tryFrom((string) $value)?->label() ?? EvaluationStatus::tryFrom((string) $value)?->label() ?? (string) $value,
+            'trigger' => EvaluationTrigger::tryFrom((string) $value)?->label() ?? (string) $value,
             'priority' => OrderPriority::tryFrom((string) $value)?->label() ?? (string) $value,
             'lock_type' => LockType::tryFrom((string) $value)?->label() ?? (string) $value,
             'customer_id' => Customer::query()->whereKey($value)->value('name') ?? (string) $value,
