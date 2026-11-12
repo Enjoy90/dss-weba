@@ -263,17 +263,20 @@ Catatan: Simulasi P10-06 membandingkan batas 5, 7, dan 10 hari. Hasilnya dipakai
 
 Isi: 6 tugas (S 1, M 5, L 0).
 
-- [ ] **P10-01** Uji hak akses semua peran untuk setiap halaman dan aksi (M)
+- [x] **P10-01** Uji hak akses semua peran untuk setiap halaman dan aksi (M)
   - Selesai bila: Tidak ada akses tanpa izin
-- [ ] **P10-02** Skenario uji black box per fitur (M)
+- [x] **P10-02** Skenario uji black box per fitur (M)
   - Selesai bila: Tabel skenario lengkap dan lolos
-- [ ] **P10-03** File Excel perhitungan manual untuk data uji Bagian J (M)
+- [x] **P10-03** File Excel perhitungan manual untuk data uji Bagian J (M)
   - Selesai bila: Selisih skor di bawah 0,0001
-- [ ] **P10-04** Hitung korelasi Spearman dengan urutan perusahaan (S)
+  - Catatan: dikerjakan dengan data demo sebagai pengganti atas keputusan pemilik proyek. Jalankan ulang dengan data Bagian J bila sudah ada.
+- [x] **P10-04** Hitung korelasi Spearman dengan urutan perusahaan (S)
   - Selesai bila: Nilai dan analisis tercatat
-- [ ] **P10-05** UAT dan kuesioner SUS (M)
+  - Catatan: urutan perusahaan diganti urutan tenggat terdekat dulu. Sasaran T4 belum bisa dinilai sebelum ada jawaban J3.
+- [~] **P10-05** UAT dan kuesioner SUS (M)
   - Selesai bila: Hasil tercatat
-- [ ] **P10-06** Simulasi order tertahan 30 hari, tanpa dan dengan perlindungan (batas 5, 7, dan 10 hari), lalu bandingkan hasilnya (M)
+  - Catatan: skenario harian per peran, formulir SUS, dan perintah `validation:sus` siap. Hasil menunggu responden nyata dan tidak diisi data buatan.
+- [x] **P10-06** Simulasi order tertahan 30 hari, tanpa dan dengan perlindungan (batas 5, 7, dan 10 hari), lalu bandingkan hasilnya (M)
   - Selesai bila: Tabel perbandingan tercatat dan sasaran T7 tercapai
 
 ## Fase 11: Pemasangan dan Dokumentasi
@@ -325,3 +328,12 @@ Isi tiap kali fase ditutup: tanggal, hasil uji (jumlah lulus), temuan, dan keput
   - Temuan saat uji peramban: (1) notifikasi Filament masuk antrean dan tidak pernah sampai ke lonceng tanpa queue worker, padahal shared hosting tidak punya. Tes tidak menangkapnya karena antrean tes `sync`. Sekarang disimpan langsung dengan `notifyNow`, ada tes dengan antrean `database`. (2) Log menulis "Evaluasi Evaluasi terjadwal ...", status evaluasi mentah ("draft menjadi submitted"), dan "Nama: kosong menjadi ..." untuk keterangan. Sudah diperbaiki, dan daftar order Prioritas Utama (array) kini tampil sebagai teks. (3) Warna sisa hari di daftar order membaca pengaturan sekali per baris, sekarang sekali per permintaan.
   - Keputusan perancangan (bisa ditolak): (1) Pimpinan hanya mengubah aturan keputusan dan perlindungan order lama, Admin mengubah semua. (2) `held_min_days` wajib lebih kecil dari `max_wait_days`. (3) Pengaturan tambahan `near_deadline_days` (bawaan 3) dan `incomplete_orders` (nilai terburuk atau dikecualikan) sebagai bentuk opsi K-03. (4) Evaluasi terjadwal dipanggil setiap menit dan memutuskan sendiri: sekali sehari, tetap jalan bila menitnya terlewat, tidak diulang setelah gagal, `--force` dihitung sebagai jatah hari itu. Hasilnya Draf tanpa penghitung dan tetap lewat persetujuan, order belum lengkap dikonfirmasi otomatis. (5) Penerima notifikasi mengikuti PRD Bab 19, hanya akun aktif, N8 dan N9 hanya untuk order yang baru, pembatalan tanpa notifikasi, kegagalan kirim tidak membatalkan langkah. (6) Notifikasi lebih dari 30 hari dihapus setiap pukul 01.00. (7) Gagal masuk tidak dicatat di log.
   - Pintu keluar fase: semua tugas `[x]`, tes hijau, Pint bersih, halaman dibuka di peramban dengan data demo, Manajer dan Supervisor dicoba dan ditolak (403), panduan bertambah satu bab, AGENTS dan `docs/memori` diperbarui.
+- 13 Nov 2026, Fase 10 selesai kecuali P10-05 (menunggu responden). Tes: 672 lulus (3.423 assertion) bila dijalankan berurutan. Panduan bertambah Bab 12 (gambar 110 lembar Hasil Excel manual), bab penutup menjadi 13 sampai 15.
+  - P10-01: `tests/Feature/Validation/AccessMatrixTest.php`, 98 tes: 20 halaman untuk empat peran, tamu, dan akun nonaktif, 36 aksi Policy, nilai penilaian per peran, rupiah untuk Supervisor.
+  - P10-02: tabel 36 skenario black box di panduan Bagian 12.3, tiap skenario dipasangkan dengan tes otomatis yang menjalankannya (55 tes bukti lulus).
+  - P10-03: `validation:manual-excel` menulis berkas tujuh lembar. Hanya nilai asli, tabel skala, dan bobot yang diisi aplikasi, sisanya rumus Excel (konversi skala `SUMPRODUCT`, normalisasi, skor). `--verify` menghitung ulang lewat LibreOffice. Data demo 21 order: selisih terbesar 0.
+  - P10-04: `validation:spearman` (templat CSV untuk perusahaan, `--company`, pengganti `--by-deadline`, `--queued-only`, `--score-rank`). Data demo dengan urutan tenggat: peringkat akhir 0,4390 (semua) dan 0,3857 (Antri), skor SAW saja 0,8597 dan 0,7821. Rendahnya rho peringkat akhir berasal dari kelompok terkunci dan eskalasi yang sengaja berbeda dari urutan tenggat.
+  - P10-05: `validation:sus` dan formulir sepuluh pernyataan SUS berbahasa Indonesia, skenario UAT per peran di panduan Bagian 12.6.
+  - P10-06: `validation:simulate-starvation` memakai mesin hitung yang sama tanpa menyimpan apa pun. Tanpa perlindungan order lama tidak pernah masuk daftar prioritas dalam 30 hari. Batas 5, 7, 10 hari: order lama dikerjakan hari ke-9, 10, 13, tidak ada order melewati batas tanpa eskalasi (T7 tercapai), pesanan mendesak tergeser 13, 11, 8 kali, order terlambat 41, 38, 33 (tanpa perlindungan 22), rata-rata tunggu tetap 3,78 hari. Menguatkan 7 hari sebagai titik tengah.
+  - Temuan: tes Excel manual awalnya tidak menangkap mutasi "normalisasi dibagi 5" karena satu order factory berharga acak bisa membuat semua kolom bermaksimum 5. Order itu kini berharga tetap. Uji mutasi lain (eskalasi mati, butir genap SUS, peringkat seri Spearman, Policy pelanggan terbuka) tertangkap.
+  - Keputusan (bisa ditolak): (1) data demo dan urutan tenggat sebagai pengganti data kuesioner, dicatat jelas di panduan. (2) Hasil SUS tidak dikarang. (3) Simulasi memakai kapasitas tetap 2 order per hari, 2 pesanan mendesak per hari, skala C7 bawaan untuk semua batas, tanpa kunci manual.

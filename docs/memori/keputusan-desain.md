@@ -101,9 +101,18 @@ Peringkat sistem murni dari skor. Peringkat akhir disusun tiga kelompok beruruta
 - Notifikasi disimpan langsung (`notifyNow`), tidak lewat antrean, karena shared hosting tidak punya queue worker. `notifications:prune` menghapus yang lebih tua dari 30 hari setiap pukul 01.00.
 - Log aktivitas (F14): halaman `ActivityLogResource` (slug log-aktivitas) hanya baca, untuk Admin dan Pimpinan. Riwayat satu order di detail order tetap terlihat semua peran. Yang dicatat: masuk dan keluar (gagal masuk tidak), order, kriteria dan bobot, skala (hanya rentang yang berubah), nilai penilaian (dengan alasan bila urgensi ditimpa), langkah evaluasi, jadwal, dan pengaturan. Kolom yang tidak punya nilai lama, atau nilainya sama, ditulis sebagai keterangan ("Alasan: ...") dan bukan "kosong menjadi ...".
 
+## Pengujian dan validasi (Fase 10)
+
+- Jawaban kuesioner Bagian J (data uji dan urutan perusahaan J3) belum ada. Atas keputusan pemilik proyek, P10-03 dan P10-04 memakai data demo, dengan urutan perusahaan diganti urutan tenggat terdekat dulu. Ini dicatat jelas di panduan Bab 12 dan harus diulang dengan data asli.
+- Hasil SUS tidak pernah diisi data buatan. P10-05 tetap `[~]` sampai ada responden.
+- Black box: setiap skenario di tabel panduan dipasangkan dengan tes otomatis yang menjalankannya, sehingga "hasil nyata" bisa dibuktikan ulang dengan `php artisan test`.
+- Excel manual: aplikasi hanya mengisi nilai asli, tabel skala, dan bobot. Konversi skala, normalisasi, dan skor adalah rumus Excel, jadi ketiganya ikut diuji. Rumus memakai `SUMPRODUCT`, bukan rumus array, supaya jalan di Excel dan LibreOffice.
+- Spearman dibandingkan dengan peringkat akhir (yang dilihat pengguna). Pilihan `--score-rank` dan `--queued-only` untuk memisahkan pengaruh kunci dan eskalasi.
+- Simulasi order tertahan: kapasitas 2 order per hari, 2 pesanan mendesak per hari, order lama L dan pesanan B dari PRD 11.7, 8 order biasa di hari ke-0. Kontrol = tanpa eskalasi (C7 tetap aktif), batas pembanding 7 hari.
+
 ## Hak akses
 
-Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 14. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
+Matriks lengkap di PRD Bab 9, ringkas di panduan Bab 15. Peran: Admin, Manajer Produksi, Supervisor, Pimpinan (enum `UserRole`: admin, manager, supervisor, leader). Semua lewat Policy. Aturan khusus:
 
 - Supervisor tidak boleh melihat rupiah. Disembunyikan di detail order, kolom harga produk, kolom C6 di matriks penilaian, riwayat perubahan order, dan riwayat nilai C6.
 - Pengguna tidak dihapus, hanya dinonaktifkan. Admin terakhir tidak boleh dinonaktifkan atau diubah perannya. Tidak boleh menonaktifkan diri sendiri.

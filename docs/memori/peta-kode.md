@@ -51,6 +51,7 @@ Satu Policy per model: User, Customer, Product, Evaluation (`create` dan `submit
 - `Settings/SystemSettings`: daftar kunci (`DECISION_KEYS` untuk Admin dan Pimpinan, `ADMIN_KEYS` hanya Admin), `values()` dengan bawaan, `save($input, $by)` (validasi, hak per kunci, satu baris log), `canOpen`, `canChangeCompany`, dan pembaca `excludeIncomplete`, `scheduleEnabled`, `scheduleTime`, `nearDeadlineDays`.
 - `Notifications/EvaluationNotifier`: `afterStep` (N1 sampai N4, dipanggil `EvaluationWorkflow`), `afterCalculation` (N5, N6, N8 sampai N10, dipanggil `EvaluationService::run`), `scheduledProblem` (N7). Disimpan dengan `notifyNow`.
 - Perintah (`app/Console/Commands`): `RunScheduledEvaluation` (`evaluation:run-scheduled`, `--force`), `PruneNotifications` (`notifications:prune`, `--days`). Jadwalnya di `routes/console.php`.
+- `Validation/` (Fase 10, tanpa menulis ke basis data): `ManualCalculationWorkbook` (Excel hitung manual dengan rumus), `SpearmanCorrelation` (`compare`, peringkat seri rata-rata), `SusScore` (`score`, `grade`, `STATEMENTS`), `StarvationSimulation` (`run(batas, batasPembanding)`, memakai `SawCalculator`, `PriorityRanker`, skala dari basis data). Perintahnya: `validation:manual-excel {path} --verify`, `validation:spearman`, `validation:sus`, `validation:simulate-starvation --daily`.
 - `Report/`: `ReportBuilder` (lima laporan: `ranking`, `calculation`, `lateOrders`, `ordersRecap`, `evaluationHistory`, masing-masing menghasilkan `ReportDocument`), `ReportTable`, `ReportColumn`, `ColumnKind`, `ReportFormatter`, `CompanyProfile` (kop dari `Setting`), `ReportPdf` (dompdf, view `resources/views/reports/pdf.blade.php`), `ReportXlsx` (OpenSpout, satu sheet per tabel plus Ringkasan).
 
 ## Filament (`app/Filament`)
@@ -72,10 +73,10 @@ Seeder (urutan di `DatabaseSeeder`): `DemoUserSeeder` (4 akun), `DemoMasterSeede
 
 ## Tes (`tests`)
 
-Pest 4 dengan `RefreshDatabase`, basis data `dss_test` (MariaDB). Satu folder per area di `tests/Feature` (Auth, Users, Master, Orders, Criteria, Assessments, Import) dan `tests/Unit` (`ScaleRulesTest`, `SawCalculatorTest`, `PriorityRankerTest`); Evaluation (layanan, alur persetujuan, halaman, kinerja); Orders (`OrderLockTest`, `OrderPriorityAndTrendTest`). Settings (`SystemSettingsTest`, `ActivityLogTest`, `ScheduledEvaluationTest`, `NotificationTest`). Pembantu di `tests/Pest.php`: `makeXlsx`, `templateHeader`, `templateRow`. Total saat ini 552 tes, 3.010 assertion. Jalankan berurutan: dengan `--parallel` tes kinerja NF01 bisa gagal karena berebut CPU.
+Pest 4 dengan `RefreshDatabase`, basis data `dss_test` (MariaDB). Satu folder per area di `tests/Feature` (Auth, Users, Master, Orders, Criteria, Assessments, Import) dan `tests/Unit` (`ScaleRulesTest`, `SawCalculatorTest`, `PriorityRankerTest`); Evaluation (layanan, alur persetujuan, halaman, kinerja); Orders (`OrderLockTest`, `OrderPriorityAndTrendTest`). Settings (`SystemSettingsTest`, `ActivityLogTest`, `ScheduledEvaluationTest`, `NotificationTest`); Validation (`AccessMatrixTest` untuk P10-01, `ManualCalculationTest`, `SpearmanTest`, `SusTest`, `StarvationSimulationTest`). Pembantu di `tests/Pest.php`: `makeXlsx`, `templateHeader`, `templateRow`. Total saat ini 672 tes, 3.423 assertion. Jalankan berurutan: dengan `--parallel` tes kinerja NF01 bisa gagal karena berebut CPU.
 
 Pola tes: login dengan `$this->actingAs(User::factory()->manager()->create())`, lalu `Livewire::test(KelasHalaman::class, [...])`. Buat data lewat factory di `database/factories` dan pakai state yang sudah ada sebelum menulis manual: User (`admin`, `manager`, `supervisor`, `leader`, `inactive`), ProductionOrder (`status`, `inProgress`, `enteredDaysAgo`, `dueInDays`, `late`), Customer (`urgency`, `inactive`), Criterion (`importance`, `inactive`, `lowerFirst`), Assessment (`updatedDaysAgo`).
 
 ## Yang belum ada (jangan dikira sudah)
 
-Kolom peringkat terakhir di daftar order. Fase 10 (pengujian dan validasi) dan Fase 11 belum dimulai, lihat TODO.
+Kolom peringkat terakhir di daftar order. Hasil UAT dan SUS (P10-05). Fase 11 belum dimulai, lihat TODO.

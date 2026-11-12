@@ -40,6 +40,14 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Dua notifikasi dari satu perhitungan tersimpan pada detik yang sama, dan id-nya UUID. Tes jangan bergantung pada urutan atau `first()`, cari notifikasi menurut `data.viewData.code`.
 - `Set-Content -Encoding utf8` di PowerShell 5.1 menambah BOM. Berkas PHP ber-BOM gagal dengan "Namespace declaration statement has to be the very first statement". Ubah berkas lewat Bash (`sed`) atau alat Edit.
 
+## Validasi (Fase 10)
+
+- Relasi `Evaluation::items()` sudah `orderBy('final_rank')`. `orderBy` tambahan hanya menjadi urutan kedua, pakai `reorder('system_rank')`.
+- Data tes yang memakai factory dengan harga atau urgensi acak bisa membuat mutasi lolos secara acak (misalnya semua kolom bermaksimum 5 sehingga "dibagi 5" sama dengan "dibagi maksimum"). Tetapkan nilai yang menentukan, dan ulangi uji mutasi beberapa kali.
+- LibreOffice menghitung rumus berkas xlsx dari OpenSpout saat dikonversi (`soffice --headless --convert-to csv`), walau berkas tidak berisi nilai tersimpan. Hanya lembar pertama yang diekspor ke CSV, jadi lembar Hasil ditaruh paling depan.
+- Akun nonaktif yang masih punya sesi mendapat 403 dari `canAccessPanel`, bukan dialihkan ke halaman masuk.
+- Konstanta global di berkas tes Pest (misalnya `ALL_ROLES`) dimuat untuk seluruh suite, namanya harus unik.
+
 ## Evaluasi
 
 - Model yang gagal `update()` karena penjaga kekekalan tetap kotor. Di tes, lakukan perubahan yang diizinkan lewat `$model->fresh()`.

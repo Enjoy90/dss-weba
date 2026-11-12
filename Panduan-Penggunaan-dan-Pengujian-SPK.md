@@ -3,9 +3,9 @@
 | Informasi | Isi |
 |---|---|
 | Aplikasi | SPK Prioritas Produksi (studi kasus PT Weba International) |
-| Versi dokumen | 1.7 |
+| Versi dokumen | 1.8 |
 | Tanggal | 13 November 2026 |
-| Cakupan | Fase 0 sampai Fase 9: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order, dasbor, order tertahan, laporan PDF serta Excel, log aktivitas, pengaturan sistem, evaluasi terjadwal, dan notifikasi |
+| Cakupan | Fase 0 sampai Fase 10: masuk dan pengguna, pelanggan, produk, order produksi, kriteria, bobot, skala nilai, penilaian order, impor dan ekspor Excel, perhitungan SAW dan evaluasi, hasil evaluasi, persetujuan, penerapan prioritas, kunci order, dasbor, order tertahan, laporan PDF serta Excel, log aktivitas, pengaturan sistem, evaluasi terjadwal, notifikasi, serta pengujian dan validasi |
 | Alamat lokal | http://localhost:8001/admin |
 
 ## 1. Tentang Dokumen Ini
@@ -23,7 +23,7 @@ Setiap pengujian ditulis dengan urutan yang sama.
 1. **Tujuan** menjelaskan apa yang sedang dibuktikan.
 2. **Masuk sebagai** menyebut akun yang dipakai.
 3. **Langkah** adalah urutan klik yang harus diikuti, satu per satu.
-4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 13.
+4. **Hasil yang diharapkan** adalah apa yang harus terlihat. Bila berbeda, lihat Bab 14.
 
 Kerjakan pengujian berurutan dari atas. Beberapa pengujian mengubah data, misalnya menonaktifkan akun. Di bagian itu ada petunjuk untuk mengembalikannya. Bila data sudah terlanjur berantakan, data demo bisa dibuat ulang seperti di Bagian 2.2.
 
@@ -38,7 +38,10 @@ Semua akun memakai kata sandi `password`.
 
 ### 1.4 Yang belum ada di fase ini
 
-Semua fitur yang direncanakan sudah dibuat sampai Fase 9. Fase berikutnya (Fase 10) berisi pengujian dan validasi dengan data, misalnya membandingkan hasil hitung aplikasi dengan hitungan manual dan menguji batas tunggu 5, 7, dan 10 hari. Fase itu tidak menambah menu baru.
+Semua fitur yang direncanakan sudah dibuat, dan pengujian serta validasi Fase 10 sudah dijalankan (Bab 12). Yang belum ada:
+
+- Hasil dengan data perusahaan. Uji akurasi dan korelasi Spearman memakai data demo karena jawaban kuesioner Bagian J belum ada. Uji penerimaan pengguna dan SUS menunggu responden.
+- Pemasangan di server staging, buku panduan per peran, dan dokumen teknis. Semuanya pekerjaan Fase 11.
 
 ## 2. Menyiapkan Aplikasi di Komputer Lokal
 
@@ -63,7 +66,7 @@ Langkah ini membuat semua tabel dari awal dan mengisinya dengan data contoh: emp
 php artisan migrate:fresh --seed
 ```
 
-**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 13.
+**Hasil yang diharapkan:** daftar migrasi berstatus DONE, disusul lima seeder (DemoUserSeeder, DemoMasterSeeder, DemoOrderSeeder, CriteriaSeeder, DemoAssessmentSeeder) yang juga berstatus DONE. Bila ada tulisan merah, periksa Bab 14.
 
 Tanggal pada order demo dibuat relatif terhadap hari ini. Jadi beberapa order selalu terlambat dan beberapa selalu hampir jatuh tempo, kapan pun data dibuat. Nilai manual penilaian juga dibuat dengan usia yang berbeda, ada yang baru dan ada yang sudah lima hari.
 
@@ -1785,11 +1788,225 @@ cd /home/namapengguna/dss && /usr/local/bin/php artisan schedule:run >> /dev/nul
 
 Bila hosting memakai PHP lain sebagai bawaan, ganti `/usr/local/bin/php` dengan jalur PHP 8.3 yang tertera di cPanel (sering berbentuk `/opt/cpanel/ea-php83/root/usr/bin/php`). Bila hosting tidak mengizinkan Cron setiap menit, jadwal setiap 5 menit tetap bisa dipakai: perhitungan berjalan pada pemanggilan pertama setelah jam yang diatur. Notifikasi tidak membutuhkan antrean (*queue worker*), jadi tidak ada Cron lain yang perlu dipasang.
 
-## 12. Menjalankan Pengujian Otomatis
+## 12. Fase 10: Pengujian dan Validasi
+
+Bab ini berbeda dari bab sebelumnya. Tidak ada menu baru. Yang dibuktikan adalah bahwa aplikasi menghitung dengan benar, menolak setiap akses yang tidak berhak, dan benar-benar melindungi order lama. Bukti dikumpulkan dengan tes otomatis dan dengan empat perintah validasi yang dijalankan di terminal folder `dss`.
+
+### 12.1 Data yang dipakai
+
+PRD Bab 13 meminta dua data dari perusahaan: data order uji dan urutan versi perusahaan dari kuesioner Bagian J, serta jawaban kuesioner SUS dari pengguna nyata. Saat bab ini ditulis, keduanya belum ada. Atas keputusan pemilik proyek, uji akurasi (12.4) dan korelasi Spearman (12.5) memakai **data demo sebagai pengganti**, dan urutan perusahaan diganti dengan urutan tenggat terdekat dulu. Hasilnya membuktikan alat ukurnya bekerja, tetapi belum membuktikan kecocokan dengan keputusan PT Weba. Bila jawaban kuesioner sudah ada, cukup jalankan ulang perintah yang sama dengan data aslinya. Uji penerimaan pengguna dan SUS (12.6) tidak bisa diganti data buatan, jadi hasilnya masih menunggu responden.
+
+Semua angka di bab ini berasal dari data demo yang disiapkan seperti Bagian 11.1:
+
+```
+php artisan migrate:fresh --seed
+php artisan evaluation:run-scheduled --force
+```
+
+### 12.2 Uji 10.1: Hak akses semua peran (P10-01)
+
+**Tujuan:** membuktikan tidak ada halaman atau aksi yang bisa dipakai peran yang tidak berhak.
+
+1. Jalankan tes matriks hak akses.
+
+```
+php artisan test --filter=AccessMatrix
+```
+
+**Hasil yang diharapkan:** 98 tes lulus. Tes ini membuka 20 halaman panel dengan keempat peran dan membandingkan hasilnya dengan tabel hak akses di Bab 15: peran yang berhak mendapat halaman, peran lain mendapat 403. Tes yang sama memastikan tamu diarahkan ke halaman masuk dari setiap halaman, akun yang dinonaktifkan saat masih masuk ditolak di setiap halaman, 36 aksi di Policy hanya dimiliki peran yang tercantum (termasuk hapus yang tidak dimiliki siapa pun), setiap peran hanya bisa mengubah nilai penilaian yang menjadi bagiannya, dan nilai rupiah tersembunyi dari Supervisor saja.
+
+Pemeriksaan di peramban dilakukan di setiap fase (misalnya Uji 9.9). Semua aksi juga diperiksa ulang di server, jadi tombol yang disembunyikan tidak bisa dijalankan lewat cara lain.
+
+### 12.3 Uji 10.2: Skenario black box per fitur (P10-02)
+
+**Tujuan:** menguji setiap fitur dari sisi pengguna, yaitu dari masukan sampai hasil, tanpa melihat kodenya.
+
+Setiap skenario di bawah dijalankan oleh tes otomatis yang memberi masukan yang sama lewat halaman atau layanan aplikasi, lalu memeriksa hasilnya. Kolom **Bukti** menyebut berkas tes dan nama tesnya. Pada pengujian 13 November 2026, semua tes bukti lulus (55 tes, 398 pemeriksaan), jadi kolom Hasil nyata berisi *Sesuai*.
+
+| No | Fitur | Skenario dan masukan | Hasil yang diharapkan | Hasil nyata | Bukti |
+|---|---|---|---|---|---|
+| BB-01 | Masuk | Email dan kata sandi benar, akun aktif | Masuk ke Dasbor, waktu masuk terakhir tercatat | Sesuai | LoginTest: logs in an active user |
+| BB-02 | Masuk | Akun nonaktif | Ditolak dengan pesan "Akun Anda dinonaktifkan" | Sesuai | LoginTest: rejects an inactive account |
+| BB-03 | Masuk | Lima kali kata sandi salah, lalu kata sandi benar | Tetap ditolak sampai jeda selesai | Sesuai | LoginTest: locks the login after five failed attempts |
+| BB-04 | Profil | Ganti kata sandi dengan kata sandi lama yang salah | Ditolak, kata sandi tidak berubah | Sesuai | ProfileTest: refuses a password change |
+| BB-05 | Pengguna | Email yang sudah dipakai, kata sandi awal kurang dari 8 huruf | Ditolak dengan pesan per kolom | Sesuai | UserManagementTest: rejects a duplicate email |
+| BB-06 | Pengguna | Menonaktifkan Admin aktif terakhir | Ditolak | Sesuai | UserManagementTest: refuses to deactivate the last active admin |
+| BB-07 | Pelanggan | Kode yang sudah dipakai, urgensi 6 | Ditolak | Sesuai | CustomerTest: requires a unique code and an urgency |
+| BB-08 | Produk | Kode ganda, harga negatif | Ditolak | Sesuai | ProductTest: rejects a duplicate product code |
+| BB-09 | Order | Tenggat sebelum tanggal masuk | Ditolak | Sesuai | OrderResourceTest: refuses a deadline before the entry date |
+| BB-10 | Order | Memilih produk pada formulir order | Harga satuan terisi dari produk dan masih bisa diubah | Sesuai | OrderResourceTest: fills the unit price from the chosen product |
+| BB-11 | Order | Filter Terlambat, Mendekati tenggat, Terkunci, Status | Daftar hanya memuat order yang cocok | Sesuai | OrderResourceTest: filters the list |
+| BB-12 | Kriteria | Bobot diatur langsung dengan total bukan 100% | Ditolak | Sesuai | CriteriaPageTest: refuses weights typed directly |
+| BB-13 | Kriteria | Menonaktifkan kriteria sampai tersisa satu | Ditolak, minimal dua kriteria aktif | Sesuai | CriteriaPageTest: keeps at least two criteria active |
+| BB-14 | Skala nilai | Rentang yang tumpang tindih | Ditolak, skala lama tetap tersimpan | Sesuai | ScaleSettingsTest: refuses overlapping ranges |
+| BB-15 | Penilaian | Persen di atas 100, jam negatif | Ditolak | Sesuai | AssessmentMatrixTest: refuses a percentage above 100 |
+| BB-16 | Penilaian | Menimpa urgensi tanpa alasan | Ditolak, alasan wajib | Sesuai | AssessmentMatrixTest: requires a reason when overriding |
+| BB-17 | Penilaian | Supervisor mengubah C3 | Tidak bisa, Supervisor hanya C4 dan C5 | Sesuai | AssessmentMatrixTest: lets the supervisor update C4 and C5 only |
+| BB-18 | Impor | Berkas 20 baris benar dan 2 baris rusak | 20 order masuk, 2 pesan kesalahan per baris | Sesuai | OrderImporterTest: shows two messages for two broken rows |
+| BB-19 | Impor | Berkas lebih dari 1.000 baris | Ditolak, tidak ada yang masuk | Sesuai | ImportOrdersPageTest: refuses a file with more than 1000 rows |
+| BB-20 | Ekspor | Ekspor daftar lalu impor kembali | Data tidak berubah | Sesuai | OrderExportTest: can be exported and imported again |
+| BB-21 | Hitung | Contoh PRD 11.6 | Skor 0,8550, 0,7400, 0,7000 dan urutan A, C, B | Sesuai | SawCalculatorTest: reproduces the worked example |
+| BB-22 | Hitung | Order belum lengkap, kotak konfirmasi tidak dicentang | Tidak ada evaluasi tersimpan | Sesuai | RunEvaluationPageTest: asks to confirm incomplete orders |
+| BB-23 | Hitung | Order menunggu 7 dan 8 hari, batas 7 | 8 hari dieskalasi, 7 hari tidak | Sesuai | EvaluationServiceTest: escalates an order waiting 8 days |
+| BB-24 | Persetujuan | Ajukan, setujui, terapkan dari halaman | Label Prioritas Utama terpasang pada N order Antri teratas | Sesuai | EvaluationPagesTest: runs the whole flow from the page |
+| BB-25 | Persetujuan | Tolak dengan catatan | Kembali ke Draf, catatan tampil, bisa diajukan lagi | Sesuai | EvaluationPagesTest: rejects with a note |
+| BB-26 | Penyesuaian | Memindah peringkat tanpa alasan | Ditolak dengan penjelasan | Sesuai | EvaluationPagesTest: refuses an adjustment without a reason |
+| BB-27 | Kunci order | Kunci manual tanpa alasan | Ditolak, tidak ada baris log | Sesuai | OrderLockTest: refuses to lock without a reason |
+| BB-28 | Kunci order | Status order diubah menjadi Dikerjakan | Order terkunci otomatis | Sesuai | OrderLockTest: locks an order by itself |
+| BB-29 | Dasbor | Klik setiap kartu angka | Daftar yang terbuka berisi tepat sejumlah angka kartu | Sesuai | DashboardTest: links every card to a list |
+| BB-30 | Laporan | Periode dengan tanggal akhir sebelum tanggal awal | Ditolak, tidak ada berkas | Sesuai | ReportsPageTest: refuses a period that ends before it starts |
+| BB-31 | Laporan | Unduh Excel peringkat | Angka sama dengan layar | Sesuai | ReportFilesTest: keeps the same numbers in the Excel ranking |
+| BB-32 | Pengaturan | Menunggu minimal Tertahan sama dengan batas tunggu | Ditolak | Sesuai | SystemSettingsTest: keeps the time of the held warning shorter |
+| BB-33 | Log | Mengubah nilai penilaian | Satu baris log berisi nilai lama dan baru | Sesuai | ActivityLogTest: logs a changed assessment value |
+| BB-34 | Jadwal | Jam pelaksanaan tiba | Evaluasi Draf dengan pemicu Terjadwal | Sesuai | ScheduledEvaluationTest: creates a draft evaluation |
+| BB-35 | Notifikasi | Manajer mengajukan evaluasi | Pimpinan menerima N1, peran lain tidak | Sesuai | NotificationTest: tells the leaders (N1) |
+| BB-36 | Hak akses | Supervisor membuka halaman Pengguna lewat alamat | 403 Forbidden | Sesuai | AccessMatrixTest: opens each page only for the roles |
+
+Tabel ini bisa dibuktikan ulang kapan saja dengan `php artisan test`. Bila satu tes bukti gagal, skenario itu tidak lagi *Sesuai*.
+
+### 12.4 Uji 10.3: Akurasi perhitungan dengan Excel (P10-03)
+
+**Tujuan:** membuktikan skor yang dihitung aplikasi sama dengan hitungan manual di Excel, dengan selisih di bawah 0,0001 untuk setiap order.
+
+1. Buat berkas Excel perhitungan manual dari evaluasi terbaru.
+
+```
+php artisan validation:manual-excel perhitungan-manual.xlsx --verify
+```
+
+**Hasil yang diharapkan:** berkas `perhitungan-manual.xlsx` dibuat, lalu muncul "Order dibandingkan: 21. Selisih terbesar: 0.0000000000." dan "Lolos: semua selisih di bawah 0,0001."
+
+2. Buka berkas itu di Excel atau LibreOffice.
+
+![Lembar Hasil berkas perhitungan manual](110-excel-manual-hasil.png)
+
+**Hasil yang diharapkan:** tujuh lembar. Yang diisi aplikasi hanya data masukan: **Nilai asli** (nilai tiap order per kriteria, sel kosong berarti belum diisi), **Tabel skala** (batas bawah, batas atas, dan skala tiap kriteria), dan **Bobot**. Lembar lain seluruhnya rumus Excel: **Skala** mengubah nilai asli menjadi skala dengan `SUMPRODUCT` atas tabel skala (nilai kosong menjadi skala 1), **Normalisasi** membagi skala dengan nilai terbesar di kolomnya, dan **Skor** mengalikan dengan bobot lalu menjumlahkannya. Lembar **Hasil** membandingkan skor Excel dengan skor yang disimpan aplikasi. Pada data demo, selisih terbesar 0 dan sel **Lolos** berisi *Ya*.
+
+Karena Excel sendiri yang menghitung konversi skala, normalisasi, dan skor dari nilai asli, berkas ini menguji ketiga langkah itu, bukan hanya penjumlahan akhir. Pilihan `--verify` membuka berkas di LibreOffice supaya rumus benar-benar dihitung oleh program spreadsheet. Tanpa `--verify`, lihat sel Lolos setelah berkas dibuka. Evaluasi lain bisa dipilih dengan `--evaluation=` diikuti nomor id-nya.
+
+Untuk data kuesioner Bagian J nanti: masukkan order uji ke aplikasi (lewat formulir atau impor Excel), jalankan perhitungan, lalu jalankan perintah di atas.
+
+### 12.5 Uji 10.4: Korelasi Spearman dengan urutan perusahaan (P10-04)
+
+**Tujuan:** mengukur seberapa mirip peringkat sistem dengan urutan yang dipilih perusahaan. Sasaran T4 adalah rho minimal 0,70.
+
+1. Buat templat untuk diisi perusahaan.
+
+```
+php artisan validation:spearman --template=urutan-perusahaan.csv
+```
+
+**Hasil yang diharapkan:** berkas CSV berisi nomor order, pelanggan, dan tenggat setiap order di evaluasi terbaru, dengan kolom **Urutan perusahaan** kosong. Perusahaan mengisi 1 untuk order yang akan dikerjakan paling dulu, 2 untuk berikutnya, dan seterusnya. Urutan yang sama boleh dipakai lebih dari satu order dan dihitung dengan peringkat rata-rata.
+
+2. Setelah templat diisi, hitung korelasinya.
+
+```
+php artisan validation:spearman --company=urutan-perusahaan.csv
+```
+
+**Hasil yang diharapkan:** tabel per order berisi peringkat sistem, urutan perusahaan, selisih d, dan d kuadrat, lalu jumlah d kuadrat, nilai rho, kekuatannya (sangat lemah sampai sangat kuat), tiga order dengan selisih terbesar untuk dianalisis, dan keterangan sasaran T4.
+
+3. Selama urutan perusahaan belum ada, jalankan dengan urutan pengganti.
+
+```
+php artisan validation:spearman --by-deadline
+php artisan validation:spearman --by-deadline --queued-only
+php artisan validation:spearman --by-deadline --score-rank
+php artisan validation:spearman --by-deadline --queued-only --score-rank
+```
+
+**Hasil yang diharapkan pada data demo:**
+
+| Order yang dibandingkan | Peringkat sistem | Jumlah order | Rho | Kekuatan |
+|---|---|---|---|---|
+| Semua order | Peringkat akhir | 21 | 0,4390 | lemah |
+| Order Antri saja | Peringkat akhir | 15 | 0,3857 | lemah |
+| Semua order | Skor SAW saja | 21 | 0,8597 | kuat |
+| Order Antri saja | Skor SAW saja | 15 | 0,7821 | kuat |
+
+**Analisis:** skor SAW saja hampir sejalan dengan urutan tenggat (rho 0,78 sampai 0,86), karena C1 sisa waktu menuju tenggat adalah kriteria dengan bobot terbesar (0,27). Peringkat akhir jauh lebih rendah karena dua aturan yang sengaja dibuat. Pertama, enam order yang sedang Dikerjakan dan satu order berkunci manual selalu di atas, sedangkan urutan tenggat tidak mengenal kunci. Kedua, enam dari lima belas order Antri sudah menunggu lebih dari 7 hari dan dinaikkan ke kelompok eskalasi walaupun tenggatnya jauh. Selisih terbesar ada pada order seperti ORD-2026-0016 (d = minus 11), ORD-2026-0017, dan ORD-2026-0019: order lama bertenggat jauh yang dinaikkan sistem tetapi diletakkan di belakang oleh urutan tenggat. Jadi rho rendah di sini bukan tanda perhitungan salah, melainkan tanda bahwa urutan tenggat bukan pembanding yang baik untuk sistem yang melindungi order lama. Sasaran T4 baru bisa dinilai dengan urutan perusahaan yang asli dari kuesioner J3. Saat urutan itu dibandingkan, gunakan peringkat akhir, karena itulah yang dilihat pengguna.
+
+### 12.6 Uji 10.5: Uji penerimaan pengguna dan SUS (P10-05)
+
+**Tujuan:** memastikan pengguna setiap peran bisa menyelesaikan pekerjaan hariannya dan menilai aplikasi mudah dipakai. Sasaran T6 adalah skor SUS minimal 68.
+
+**Status:** alat dan formulir siap, hasil menunggu responden. Hasil SUS tidak boleh diisi data buatan.
+
+1. Minta sedikitnya satu orang dari setiap peran menjalankan skenario harian berikut di aplikasi staging, tanpa dibantu.
+
+| Peran | Skenario harian |
+|---|---|
+| Admin | Menambah pengguna baru, menonaktifkan pengguna, mengubah profil perusahaan di Pengaturan, membaca Log Aktivitas hari ini |
+| Manajer Produksi | Menambah dua order, melengkapi penilaiannya, menjalankan perhitungan, mengajukan hasilnya, lalu menerapkan setelah disetujui |
+| Supervisor Produksi | Melihat daftar order berlabel Prioritas Utama, memperbarui C4 dan C5 dua order, mengubah status satu order menjadi Dikerjakan |
+| Pimpinan | Membuka notifikasi, meninjau evaluasi yang diajukan, menyetujui atau menolaknya dengan catatan, mengunduh laporan peringkat PDF |
+
+2. Sesudahnya, minta setiap responden mengisi sepuluh pernyataan SUS dengan pilihan 1 (sangat tidak setuju) sampai 5 (sangat setuju).
+
+| Butir | Pernyataan |
+|---|---|
+| 1 | Saya ingin sering memakai aplikasi ini. |
+| 2 | Aplikasi ini terlalu rumit tanpa alasan. |
+| 3 | Aplikasi ini mudah dipakai. |
+| 4 | Saya butuh bantuan orang teknis untuk bisa memakai aplikasi ini. |
+| 5 | Fitur-fitur di aplikasi ini menyatu dengan baik. |
+| 6 | Terlalu banyak hal yang tidak konsisten di aplikasi ini. |
+| 7 | Kebanyakan orang akan cepat belajar memakai aplikasi ini. |
+| 8 | Aplikasi ini terasa merepotkan untuk dipakai. |
+| 9 | Saya merasa yakin saat memakai aplikasi ini. |
+| 10 | Saya perlu belajar banyak hal sebelum bisa memakai aplikasi ini. |
+
+3. Masukkan jawaban ke templat lalu hitung skornya.
+
+```
+php artisan validation:sus --template=jawaban-sus.csv
+php artisan validation:sus jawaban-sus.csv
+```
+
+**Hasil yang diharapkan:** skor tiap responden (0 sampai 100), rata-rata per peran, rata-rata semua responden dengan nilainya (A di atas 80,3; B atau C dari 68; D dari 51; F di bawahnya), dan keterangan sasaran T6. Butir ganjil dihitung jawaban dikurangi 1, butir genap 5 dikurangi jawaban, lalu jumlahnya dikali 2,5. Baris dengan jawaban di luar 1 sampai 5 ditolak dengan nomor barisnya.
+
+### 12.7 Uji 10.6: Simulasi order tertahan 30 hari (P10-06)
+
+**Tujuan:** membuktikan perlindungan order lama bekerja dan menguji apakah batas tunggu 7 hari wajar. Sasaran T7: dengan perlindungan, tidak ada order yang menunggu lebih lama dari batas tanpa dinaikkan ke kelompok eskalasi.
+
+1. Jalankan simulasi.
+
+```
+php artisan validation:simulate-starvation --daily
+```
+
+**Cara kerja simulasi:** perhitungan memakai mesin SAW, skala nilai, bobot, dan aturan peringkat yang sama dengan aplikasi, tanpa menyimpan apa pun. Hari ke-0 berisi order lama L dari contoh PRD 11.7 (pelanggan biasa, tenggat 40 hari lagi) dan 8 order biasa dengan tenggat 6 sampai 20 hari. Setiap hari masuk 2 pesanan mendesak baru seperti order B di contoh itu (urgensi 5, tenggat 3 hari, nilai 60 juta), dan pabrik menyelesaikan 2 order dari urutan teratas peringkat akhir. Pabrik sengaja dibuat penuh supaya order lama benar-benar tertekan. Skenario yang sama dijalankan tanpa perlindungan (tanpa eskalasi) dan dengan batas tunggu 5, 7, dan 10 hari.
+
+**Hasil yang diharapkan:**
+
+| Ukuran | Tanpa perlindungan | Batas 5 hari | Batas 7 hari | Batas 10 hari |
+|---|---|---|---|---|
+| Hari order lama masuk daftar prioritas | tidak pernah | 7 | 9 | 11 |
+| Hari order lama dikerjakan | tidak pernah | 9 | 10 | 13 |
+| Peringkat terbaik order lama | 11 | 1 | 2 | 1 |
+| Order melewati batas tanpa dieskalasi | 6 | 0 | 0 | 0 |
+| Tunggu terlama tanpa dieskalasi (hari) | 29 | 0 | 0 | 0 |
+| Order yang dieskalasi | 0 | 7 | 6 | 5 |
+| Pesanan mendesak tergeser eskalasi (order kali hari) | 0 | 13 | 11 | 8 |
+| Rata-rata lama menunggu (hari) | 3,78 | 3,78 | 3,78 | 3,78 |
+| Lama menunggu maksimum (hari) | 29 | 9 | 10 | 13 |
+| Order selesai melewati tenggat | 22 | 41 | 38 | 33 |
+
+Baris terakhir perintah berbunyi "Sasaran T7 tercapai". Batas pembanding untuk kolom tanpa perlindungan adalah 7 hari.
+
+**Analisis:**
+
+1. **Masalahnya nyata.** Tanpa perlindungan, order lama tidak pernah masuk daftar prioritas selama 30 hari dan tertahan di peringkat 11 setiap hari, karena selalu kalah oleh pesanan mendesak baru. Kriteria C7 lama menunggu saja tidak cukup mengangkatnya, sama dengan kesimpulan PRD 11.7.
+2. **Perlindungan bekerja.** Dengan batas 7 hari, order lama masuk kelompok eskalasi pada hari ke-8 (hari pertama menunggu lebih dari 7 hari), masuk daftar prioritas pada hari ke-9, dan dikerjakan pada hari ke-10. Tidak ada satu pun order yang melewati batas tanpa dieskalasi, jadi sasaran T7 tercapai. Hal yang sama berlaku untuk batas 5 dan 10 hari.
+3. **Ada harganya.** Rata-rata lama menunggu sama di semua skenario (3,78 hari), karena kapasitas pabrik sama dan yang berubah hanya siapa yang menunggu. Perlindungan memindahkan tunggu dari order lama ke pesanan baru. Akibatnya, order yang selesai melewati tenggat naik dari 22 menjadi 38 pada batas 7 hari, dan pesanan mendesak yang tergeser eskalasi tercatat 11 kali.
+4. **Pilihan batas.** Batas 5 hari paling cepat menolong order lama (lama menunggu maksimum 9 hari) tetapi paling sering menggeser pesanan mendesak (13 kali) dan menghasilkan keterlambatan terbanyak (41). Batas 10 hari kebalikannya: paling sedikit menggeser (8 kali) dan terlambat (33), tetapi order lama baru dikerjakan setelah 13 hari. Batas 7 hari berada di tengah keduanya, sehingga simulasi ini **menguatkan nilai bawaan 7 hari**. Keputusan akhirnya tetap pada perusahaan, tergantung mana yang lebih merugikan: pelanggan lama yang menunggu terlalu lama atau pesanan mendesak yang terlambat.
+5. **Catatan batas simulasi.** Skala C7 tetap memakai rentang bawaan (skala 5 mulai 7 hari) untuk semua batas, padahal PRD 11.5 menyarankan rentang C7 ikut digeser bila batasnya diubah. Simulasi juga memakai kapasitas tetap 2 order per hari dan tidak memodelkan kunci manual.
+
+## 13. Menjalankan Pengujian Otomatis
 
 Selain diuji dengan tangan seperti di atas, aplikasi punya pengujian otomatis yang menjalankan ratusan pemeriksaan dalam hitungan detik. Pengujian ini memakai basis data terpisah bernama `dss_test`, jadi tidak menyentuh data demo Anda.
 
-### 12.1 Cara menjalankan
+### 13.1 Cara menjalankan
 
 1. Pastikan MySQL menyala dan basis data `dss_test` ada.
 2. Di terminal folder `dss`, jalankan perintah berikut.
@@ -1800,9 +2017,9 @@ php artisan test --compact
 
 3. Tunggu sekitar setengah menit.
 
-**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 552 tes dengan 3.010 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
+**Hasil yang diharapkan:** ringkasan di akhir menyatakan semua tes lulus, saat ini 672 tes dengan 3.423 pemeriksaan (tulisan seperti `Tests: 79 passed`). Bila ada yang gagal, ringkasan menyebut nama tes dan penyebabnya.
 
-### 12.2 Apa saja yang diuji
+### 13.2 Apa saja yang diuji
 
 - **Masuk dan profil:** login berhasil dan gagal, akun nonaktif, batas lima percobaan, halaman yang tertutup bagi tamu, ganti nama dan kata sandi.
 - **Pengguna:** hak akses Admin, tambah, ubah, nonaktifkan, atur ulang kata sandi, serta aturan Admin terakhir dan larangan menonaktifkan diri sendiri.
@@ -1823,8 +2040,9 @@ php artisan test --compact
 - **Evaluasi terjadwal:** terdaftar di penjadwal, tidak berjalan sebelum jamnya, berjalan pada jam yang diatur atau menit sesudahnya, hanya sekali sehari, berhenti saat sakelar mati, bisa dipaksa, hasil berstatus Draf dengan pemicu Terjadwal, pencatatan dan notifikasi bila tidak ada order atau perhitungan gagal, dan penghapusan notifikasi yang lebih tua dari 30 hari.
 - **Notifikasi:** N1 sampai N10 sampai ke peran yang tepat dan tidak ke peran lain, akun nonaktif yang dilewati, N8 dan N9 yang hanya dikirim untuk order yang baru tertahan atau baru dieskalasi, daftar nomor order yang dipendekkan, notifikasi yang langsung tersimpan tanpa antrean, dan langkah persetujuan atau perhitungan yang tetap tersimpan walaupun pengiriman notifikasi gagal.
 - **Data demo:** jumlah dan sebaran data, kriteria awal dan skalanya, nilai penilaian demo, dan setiap halaman terbuka tanpa kosong untuk keempat peran.
+- **Validasi (Fase 10):** matriks hak akses 20 halaman dan 36 aksi untuk keempat peran, tamu, dan akun nonaktif, berkas Excel hitung manual yang menghasilkan skor yang sama dengan sistem saat dihitung LibreOffice, korelasi Spearman termasuk peringkat seri, skor SUS, dan simulasi order tertahan 30 hari yang mencapai sasaran T7.
 
-### 12.3 Menjalankan sebagian tes
+### 13.3 Menjalankan sebagian tes
 
 Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama tes, misalnya:
 
@@ -1832,7 +2050,7 @@ Untuk memeriksa satu bagian saja, tambahkan `--filter` dengan kata kunci nama te
 php artisan test --compact --filter="order"
 ```
 
-## 13. Jika Ada Masalah
+## 14. Jika Ada Masalah
 
 **Halaman tidak bisa dibuka atau muncul "gagal terhubung".** Pastikan perintah `php artisan serve --port=8001` masih berjalan di terminal dan alamatnya `http://localhost:8001/admin`.
 
@@ -1872,9 +2090,9 @@ php artisan test --compact --filter="order"
 
 **Tes otomatis gagal terhubung atau berhenti tanpa keluaran.** Pastikan basis data `dss_test` sudah dibuat dan MySQL menyala. Bila MySQL mati, tes bisa diam lama tanpa pesan apa pun sebelum akhirnya gagal.
 
-## 14. Lampiran: Ringkasan Hak Akses
+## 15. Lampiran: Ringkasan Hak Akses
 
-Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 9.
+Ringkasan berikut berlaku untuk fitur yang sudah ada sampai Fase 10, dan seluruhnya diperiksa oleh tes matriks hak akses (Uji 10.1).
 
 | Kegiatan | Admin | Manajer | Supervisor | Pimpinan |
 |---|---|---|---|---|
