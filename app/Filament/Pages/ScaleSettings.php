@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\CriterionDirection;
+use App\Models\ActivityLog;
 use App\Models\Criterion;
 use App\Services\ScaleRules;
 use BackedEnum;
@@ -228,6 +229,8 @@ class ScaleSettings extends Page
             return;
         }
 
+        $before = static::scaleSummary($criterion);
+
         foreach ($scales as $row) {
             $criterion->scales()->updateOrCreate(
                 ['score' => (int) $row['score']],
@@ -239,7 +242,38 @@ class ScaleSettings extends Page
             );
         }
 
+        $after = static::scaleSummary($criterion->unsetRelation('scales'));
+        $changed = array_keys(array_filter($after, fn (string $text, string $key): bool => ($before[$key] ?? null) !== $text, ARRAY_FILTER_USE_BOTH));
+
+        if ($changed !== []) {
+            ActivityLog::record(
+                'criterion.scales_updated',
+                $criterion,
+                array_intersect_key($before, array_flip($changed)),
+                array_intersect_key($after, array_flip($changed)),
+                auth()->user(),
+            );
+        }
+
         Notification::make()->title('Skala '.$criterion->code.' disimpan')->success()->send();
+    }
+
+    /**
+     * The five scales as readable text by scale number, for the activity log.
+     *
+     * @return array<string, string>
+     */
+    protected static function scaleSummary(Criterion $criterion): array
+    {
+        $summary = [];
+
+        foreach ($criterion->scales()->orderByDesc('score')->get() as $scale) {
+            $lower = $scale->lower_bound === null ? 'terbuka' : (string) (float) $scale->lower_bound;
+            $upper = $scale->upper_bound === null ? 'terbuka' : (string) (float) $scale->upper_bound;
+            $summary['Skala '.$scale->score] = $lower.' sampai '.$upper;
+        }
+
+        return $summary;
     }
 
     protected function canEdit(): bool

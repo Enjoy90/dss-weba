@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Evaluation;
 use App\Models\ProductionOrder;
 use App\Models\User;
+use App\Services\Notifications\EvaluationNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -177,9 +178,12 @@ class EvaluationWorkflow
     {
         Gate::forUser($by)->authorize($ability, $evaluation);
 
-        return DB::transaction(function () use ($evaluation, $by, $action, $change, $extra): Evaluation {
+        $submitterId = null;
+
+        $result = DB::transaction(function () use ($evaluation, $by, $action, $change, $extra, &$submitterId): Evaluation {
             $fresh = Evaluation::query()->lockForUpdate()->findOrFail($evaluation->id);
             $before = $fresh->status;
+            $submitterId = $fresh->submitted_by;
 
             $change($fresh);
 
@@ -190,6 +194,11 @@ class EvaluationWorkflow
 
             return $fresh;
         });
+
+        // The notification is sent after the change is saved, and a problem with it never undoes the step.
+        rescue(fn () => app(EvaluationNotifier::class)->afterStep($action, $result, $submitterId), report: true);
+
+        return $result;
     }
 
     private function fail(string $message, string $field = 'evaluation'): never

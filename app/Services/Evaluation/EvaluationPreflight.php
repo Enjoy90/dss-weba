@@ -20,6 +20,7 @@ final class EvaluationPreflight
      * @param  Collection<int, Criterion>  $criteria  active criteria with scales
      * @param  Collection<int, ProductionOrder>  $orders  open orders with customer, product and assessments
      * @param  array<int, Collection<int, ResolvedValue>>  $resolved  values per order id, keyed by criterion id
+     * @param  array<int, array{order_id: int, number: string, criteria: array<int, string>}>  $excluded  incomplete orders left out because the setting says so
      */
     public function __construct(
         public readonly array $blockers,
@@ -28,6 +29,7 @@ final class EvaluationPreflight
         public readonly Collection $criteria,
         public readonly Collection $orders,
         public readonly array $resolved,
+        public readonly array $excluded = [],
     ) {}
 
     public function canRun(): bool

@@ -65,6 +65,40 @@ class ActivityLog extends Model
         ]);
     }
 
+    /**
+     * The kinds of activity that can appear in the log, for a filter.
+     *
+     * @return array<string, string>
+     */
+    public static function actionOptions(): array
+    {
+        $options = [];
+
+        foreach (static::query()->distinct()->orderBy('action')->pluck('action') as $action) {
+            $options[$action] = (new static(['action' => $action]))->actionLabel();
+        }
+
+        asort($options);
+
+        return $options;
+    }
+
+    /**
+     * What the row is about in words, such as "Order ORD-2026-0001", or a dash when it is not about one record.
+     */
+    public function subjectLabel(): string
+    {
+        $subject = $this->subject;
+
+        return match (true) {
+            $subject instanceof ProductionOrder => 'Order '.$subject->number,
+            $subject instanceof Criterion => 'Kriteria '.$subject->code,
+            $subject instanceof Evaluation => 'Evaluasi '.$subject->name,
+            $subject instanceof Assessment => 'Penilaian '.($subject->order?->number ?? '?').', '.($subject->criterion?->code ?? '?'),
+            default => '-',
+        };
+    }
+
     public function actionLabel(): string
     {
         return match ($this->action) {
@@ -81,6 +115,13 @@ class ActivityLog extends Model
             'evaluation.applied' => 'Prioritas diterapkan',
             'evaluation.canceled' => 'Evaluasi dibatalkan',
             'evaluation.rank_adjusted' => 'Peringkat disesuaikan',
+            'evaluation.schedule_skipped' => 'Perhitungan terjadwal dilewati',
+            'evaluation.schedule_failed' => 'Perhitungan terjadwal gagal',
+            'assessment.updated' => 'Nilai penilaian diubah',
+            'criterion.scales_updated' => 'Skala nilai diubah',
+            'setting.updated' => 'Pengaturan diubah',
+            'auth.login' => 'Masuk',
+            'auth.logout' => 'Keluar',
             default => $this->action,
         };
     }
@@ -145,6 +186,23 @@ class ActivityLog extends Model
             'weight' => 'Bobot',
             'sort' => 'Urutan',
             'is_active' => 'Aktif',
+            'raw_value' => 'Nilai',
+            'top_n_priority' => 'Jumlah Prioritas Utama',
+            'approval_required' => 'Persetujuan Pimpinan wajib',
+            'stale_value_days' => 'Batas nilai manual kedaluwarsa (hari)',
+            'incomplete_orders' => 'Order belum lengkap',
+            'lock_in_progress' => 'Kunci otomatis order Dikerjakan',
+            'max_wait_days' => 'Batas tunggu maksimum (hari)',
+            'held_after_evaluations' => 'Evaluasi berturut-turut untuk Tertahan',
+            'held_min_days' => 'Menunggu minimal untuk Tertahan (hari)',
+            'company_name' => 'Nama perusahaan',
+            'company_address' => 'Alamat perusahaan',
+            'company_phone' => 'Telepon perusahaan',
+            'company_logo' => 'Logo perusahaan',
+            'schedule_enabled' => 'Evaluasi terjadwal aktif',
+            'schedule_time' => 'Jam evaluasi terjadwal',
+            'near_deadline_days' => 'Batas mendekati tenggat (hari)',
+            'incomplete_count' => 'Jumlah order belum lengkap',
         ][$field] ?? $field;
     }
 
@@ -152,6 +210,14 @@ class ActivityLog extends Model
     {
         if ($value === null || $value === '') {
             return 'kosong';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'ya' : 'tidak';
+        }
+
+        if ($field === 'incomplete_orders') {
+            return $value === 'exclude' ? 'dikecualikan' : 'ikut dengan nilai terburuk';
         }
 
         return match ($field) {

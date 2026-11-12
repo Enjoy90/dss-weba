@@ -135,6 +135,12 @@ class RunEvaluation extends Page implements HasTable
                     ->state(fn (): int => count($this->preflight()->incomplete))
                     ->badge()
                     ->color(fn (int $state): string => $state > 0 ? 'danger' : 'success'),
+                TextEntry::make('excluded_count')
+                    ->label('Dikecualikan')
+                    ->state(fn (): int => count($this->preflight()->excluded))
+                    ->badge()
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->preflight()->excluded !== []),
                 TextEntry::make('stale_count')
                     ->label('Perlu diperbarui')
                     ->state(fn (): int => count($this->preflight()->stale))
@@ -145,6 +151,11 @@ class RunEvaluation extends Page implements HasTable
                     ->state(fn (): int => $this->preflight()->criteria->count())
                     ->badge()
                     ->color('gray'),
+                TextEntry::make('excluded_hint')
+                    ->hiddenLabel()
+                    ->state('Order yang belum lengkap dikecualikan dari perhitungan sesuai pengaturan. Order itu tidak mendapat peringkat sampai nilainya dilengkapi di menu Penilaian Order.')
+                    ->columnSpanFull()
+                    ->visible(fn (): bool => $this->preflight()->excluded !== []),
                 TextEntry::make('warning_hint')
                     ->hiddenLabel()
                     ->state('Order yang belum lengkap tetap dihitung dengan nilai terburuk (skala 1) untuk kriteria yang kosong. Lengkapi dulu di menu Penilaian Order bila ingin hasil yang lebih tepat.')
@@ -309,6 +320,10 @@ class RunEvaluation extends Page implements HasTable
 
         if ($preflight->incomplete !== []) {
             $html .= $this->orderList('Belum lengkap (kriteria yang kosong dihitung sebagai skala 1)', $preflight->incomplete);
+        }
+
+        if ($preflight->excluded !== []) {
+            $html .= $this->orderList('Dikecualikan karena belum lengkap (tidak mendapat peringkat)', $preflight->excluded);
         }
 
         if ($preflight->stale !== []) {

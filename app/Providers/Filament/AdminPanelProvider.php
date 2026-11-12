@@ -51,6 +51,8 @@ class AdminPanelProvider extends PanelProvider
                     }
                 </style>
                 HTML))
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->navigationGroups(['Produksi', 'Prioritas', 'Data Master', 'Laporan', 'Pengaturan'])
             ->colors([
                 'primary' => Color::Blue,

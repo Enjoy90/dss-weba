@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Models\Concerns\LogsActivity;
 use App\Services\Evaluation\EvaluationSettings;
 use App\Services\Evaluation\HeldOrders;
+use App\Services\Settings\SystemSettings;
 use Carbon\CarbonInterface;
 use Database\Factories\ProductionOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,8 +29,6 @@ class ProductionOrder extends Model
 {
     /** @use HasFactory<ProductionOrderFactory> */
     use HasFactory, LogsActivity, SoftDeletes;
-
-    public const NEAR_DEADLINE_DAYS = 3;
 
     /**
      * @var array<string, string>
@@ -174,7 +173,7 @@ class ProductionOrder extends Model
     {
         return $query->open()->whereBetween('deadline_date', [
             today()->toDateString(),
-            today()->addDays(self::NEAR_DEADLINE_DAYS)->toDateString(),
+            today()->addDays(SystemSettings::nearDeadlineDays())->toDateString(),
         ]);
     }
 

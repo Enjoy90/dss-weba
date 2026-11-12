@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Filament\Pages\AssessmentMatrix;
 use App\Filament\Resources\ProductionOrders\ProductionOrderResource;
 use App\Services\Dashboard\DashboardFigures;
+use App\Services\Settings\SystemSettings;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -41,7 +42,7 @@ class OrderStatsOverview extends StatsOverviewWidget
                 ->color($counts['late'] > 0 ? 'danger' : 'gray')
                 ->url(ProductionOrderResource::getUrl('index', ['filters' => ['late' => ['isActive' => true]]])),
             Stat::make('Mendekati tenggat', $counts['near'])
-                ->description('Tenggat dalam 3 hari')
+                ->description('Tenggat dalam '.SystemSettings::nearDeadlineDays().' hari')
                 ->color($counts['near'] > 0 ? 'warning' : 'gray')
                 ->url(ProductionOrderResource::getUrl('index', ['filters' => ['near_deadline' => ['isActive' => true]]])),
             Stat::make('Penilaian belum lengkap', $counts['incomplete'])

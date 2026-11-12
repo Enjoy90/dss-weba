@@ -21,6 +21,7 @@ use App\Models\Product;
 use App\Models\ProductionOrder;
 use App\Services\AssessmentFormatter;
 use App\Services\AssessmentResolver;
+use App\Services\Settings\SystemSettings;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -337,7 +338,7 @@ class ProductionOrderResource extends Resource
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->late()),
                 Filter::make('near_deadline')
-                    ->label('Mendekati tenggat (3 hari)')
+                    ->label('Mendekati tenggat ('.SystemSettings::nearDeadlineDays().' hari)')
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->nearDeadline()),
                 SelectFilter::make('priority')
@@ -476,7 +477,7 @@ class ProductionOrderResource extends Resource
 
         return match (true) {
             $days < 0 => 'danger',
-            $days <= ProductionOrder::NEAR_DEADLINE_DAYS => 'warning',
+            $days <= SystemSettings::nearDeadlineDays() => 'warning',
             default => 'gray',
         };
     }

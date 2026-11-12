@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ValueSource;
+use App\Models\ActivityLog;
 use App\Models\Assessment;
 use App\Models\Criterion;
 use App\Models\ProductionOrder;
@@ -179,5 +180,13 @@ class AssessmentWriter
             'changed_by' => $by->id,
             'changed_at' => now(),
         ]);
+
+        ActivityLog::record(
+            'assessment.updated',
+            $assessment,
+            ['raw_value' => $old],
+            ['raw_value' => $new] + ($assessment->is_overridden ? ['reason' => $assessment->override_reason] : []),
+            $by,
+        );
     }
 }

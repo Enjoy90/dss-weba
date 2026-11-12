@@ -15,10 +15,12 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\AssessmentResolver;
 use App\Services\CriterionWeights;
+use App\Services\Notifications\EvaluationNotifier;
 use App\Services\ResolvedValue;
 use App\Services\Saw\PriorityRanker;
 use App\Services\Saw\RankCandidate;
 use App\Services\Saw\SawCalculator;
+use App\Services\Settings\SystemSettings;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -71,6 +73,17 @@ class EvaluationService
             }
         }
 
+        // With the setting "dikecualikan" an incomplete order is left out instead of counting with the worst value.
+        $excluded = [];
+
+        if ($incomplete !== [] && SystemSettings::excludeIncomplete()) {
+            $excludedIds = array_column($incomplete, 'order_id');
+            $excluded = $incomplete;
+            $incomplete = [];
+            $orders = $orders->reject(fn (ProductionOrder $order): bool => in_array($order->id, $excludedIds, true))->values();
+            $resolved = array_diff_key($resolved, array_flip($excludedIds));
+        }
+
         $blockers = [];
         $weights = CriterionWeights::summary();
 
@@ -79,10 +92,12 @@ class EvaluationService
         }
 
         if ($orders->isEmpty()) {
-            $blockers[] = 'Belum ada order berstatus Antri atau Dikerjakan yang bisa dihitung. Tambahkan order lebih dulu di menu Order Produksi.';
+            $blockers[] = $excluded === []
+                ? 'Belum ada order berstatus Antri atau Dikerjakan yang bisa dihitung. Tambahkan order lebih dulu di menu Order Produksi.'
+                : 'Semua order yang berjalan belum lengkap dan dikecualikan sesuai pengaturan. Lengkapi nilainya di menu Penilaian Order, atau ubah pengaturan order belum lengkap.';
         }
 
-        return new EvaluationPreflight($blockers, $incomplete, $stale, $criteria, $orders, $resolved);
+        return new EvaluationPreflight($blockers, $incomplete, $stale, $criteria, $orders, $resolved, $excluded);
     }
 
     /**
@@ -108,13 +123,25 @@ class EvaluationService
             throw new EvaluationNeedsConfirmationException($preflight);
         }
 
-        return DB::transaction(fn (): Evaluation => $this->store($preflight, $by, $trigger, $name, $notes, $moment));
+        $heldBefore = app(HeldOrders::class)->ids();
+
+        $evaluation = DB::transaction(fn (): Evaluation => $this->store($preflight, $by, $trigger, $name, $notes, $moment));
+
+        // Notifications follow the saved calculation, and a problem with them never undoes it.
+        rescue(fn () => app(EvaluationNotifier::class)->afterCalculation(
+            $evaluation,
+            $heldBefore,
+            app(HeldOrders::class)->ids(),
+            count($preflight->stale),
+        ), report: true);
+
+        return $evaluation;
     }
 
     /**
      * The settings that shape the calculation, read once and copied into the evaluation.
      *
-     * @return array{weight_mode: string, stale_value_days: int, lock_in_progress: bool, max_wait_days: int, top_n_priority: int}
+     * @return array{weight_mode: string, stale_value_days: int, lock_in_progress: bool, max_wait_days: int, top_n_priority: int, incomplete_orders: string}
      */
     public function currentSettings(): array
     {
@@ -124,6 +151,7 @@ class EvaluationService
             'lock_in_progress' => EvaluationSettings::lockInProgress(),
             'max_wait_days' => EvaluationSettings::maxWaitDays(),
             'top_n_priority' => EvaluationSettings::topN(),
+            'incomplete_orders' => SystemSettings::excludeIncomplete() ? SystemSettings::INCOMPLETE_EXCLUDE : SystemSettings::INCOMPLETE_WORST,
         ];
     }
 
