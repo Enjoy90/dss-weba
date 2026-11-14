@@ -53,7 +53,7 @@ Masalah yang sudah pernah terjadi selama pembangunan, supaya tidak diulang.
 - Model yang gagal `update()` karena penjaga kekekalan tetap kotor. Di tes, lakukan perubahan yang diizinkan lewat `$model->fresh()`.
 - JSON mengembalikan `5` untuk `5.0`. Bandingkan nilai asli di tes dengan `toEqual`, bukan `toBe`.
 - Item evaluasi disisipkan massal lewat `insert()` sehingga tidak melewati penjaga model. Jangan memakai jalur itu untuk mengubah data yang sudah tersimpan.
-- Kelompok Terkunci menurut kolom `lock_type`. Order Dikerjakan yang kolomnya masih `none` (hasil impor atau ubah status tangan) dihitung Biasa sampai P7-08 selesai.
+- Kelompok Terkunci menurut kolom `lock_type`, bukan menurut status order. Kunci otomatis dipasang oleh model order saat status berubah ke Dikerjakan (P7-08), jadi hasil impor dan ubah status tangan ikut terkunci selama pengaturan kunci otomatis aktif. Bila pengaturan itu dimatikan, order Dikerjakan dihitung Biasa.
 
 ## Fase 7
 

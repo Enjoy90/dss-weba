@@ -42,10 +42,10 @@ Fase dinyatakan selesai bila semua butir ini terpenuhi:
 | 6 | Mesin SAW dan Evaluasi | 9 | 9 |
 | 7 | Hasil, Persetujuan, Penerapan | 10 | 10 |
 | 8 | Dasbor dan Laporan | 6 | 6 |
-| 9 | Log, Pengaturan, Penjadwalan | 4 | 0 |
-| 10 | Pengujian dan Validasi | 6 | 0 |
+| 9 | Log, Pengaturan, Penjadwalan | 4 | 4 |
+| 10 | Pengujian dan Validasi | 6 | 5 |
 | 11 | Pemasangan dan Dokumentasi | 4 | 0 |
-| Total | | 72 | 58 |
+| Total | | 72 | 67 |
 
 Urutan: Fase 0 sampai 11 dikerjakan berurutan. Fase 5 butuh Fase 2 dan 4, Fase 6 butuh Fase 3 dan 4, Fase 7 butuh Fase 6, Fase 8 butuh Fase 7.
 
