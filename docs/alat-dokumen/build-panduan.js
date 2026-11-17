@@ -36,25 +36,34 @@ function pngSize(file) {
     return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
 }
 
-/* Markup sebaris: **tebal** dan `kode`. */
+/* Markup sebaris: **tebal**, *miring*, `kode`, dan \* untuk tanda bintang biasa. */
+const ESC_STAR = '\u0001';
+const unescapeStar = (s) => s.split(ESC_STAR).join('*');
+
 function runs(text, o = {}) {
     const size = o.size || 24;
     const color = o.color || INK;
     const out = [];
-    const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    const source = text.split('\\*').join(ESC_STAR);
+    const re = /(\*\*[^*]+\*\*|(?<![\w*])\*(?!\s)[^*]+?(?<!\s)\*(?![\w*])|`[^`]+`)/g;
     let last = 0, m;
-    while ((m = re.exec(text)) !== null) {
-        if (m.index > last) out.push(new TextRun({ text: text.slice(last, m.index), size, color, bold: o.bold, italics: o.italics }));
+    while ((m = re.exec(source)) !== null) {
+        if (m.index > last) out.push(new TextRun({ text: unescapeStar(source.slice(last, m.index)), size, color, bold: o.bold, italics: o.italics }));
         const t = m[0];
-        if (t.startsWith('**')) out.push(new TextRun({ text: t.slice(2, -2), bold: true, size, color }));
-        else out.push(new TextRun({ text: t.slice(1, -1), font: MONO, size: size - 2, color }));
+        if (t.startsWith('**')) out.push(new TextRun({ text: unescapeStar(t.slice(2, -2)), bold: true, size, color }));
+        else if (t.startsWith('`')) out.push(new TextRun({ text: unescapeStar(t.slice(1, -1)), font: MONO, size: size - 2, color }));
+        else out.push(new TextRun({ text: unescapeStar(t.slice(1, -1)), italics: true, bold: o.bold, size, color }));
         last = m.index + t.length;
     }
-    if (last < text.length) out.push(new TextRun({ text: text.slice(last), size, color, bold: o.bold, italics: o.italics }));
+    if (last < source.length) out.push(new TextRun({ text: unescapeStar(source.slice(last)), size, color, bold: o.bold, italics: o.italics }));
     return out.length ? out : [new TextRun({ text: '', size })];
 }
 
-const plain = (t) => t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+const plain = (t) => t.split('\\*').join(ESC_STAR)
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/(?<![\w*])\*(?!\s)([^*]+?)(?<!\s)\*(?![\w*])/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .split(ESC_STAR).join('*');
 
 const headings = [];
 const figures = [];
@@ -66,7 +75,7 @@ function h1(text) {
     const p = new Paragraph({
         heading: HeadingLevel.HEADING_1,
         children: [new TextRun({ text, size: 30, bold: true, color: INK })],
-        pageBreakBefore: firstChapter, spacing: { before: firstChapter ? 0 : 400, after: 200 },
+        pageBreakBefore: true, spacing: { before: 0, after: 200 },
         border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: INK, space: 6 } },
         keepNext: true,
     });
@@ -77,7 +86,8 @@ function h2(text) {
     headings.push({ level: 2, text });
     return new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text, size: 26, bold: true, color: INK })], spacing: { before: 240, after: 100 }, keepNext: true });
 }
-const para = (text) => new Paragraph({ children: runs(text), alignment: AlignmentType.JUSTIFIED, spacing: { after: 130, line: 300 } });
+const hasLongCode = (text) => /`[^`]{24,}`/.test(text);
+const para = (text) => new Paragraph({ children: runs(text), alignment: hasLongCode(text) ? AlignmentType.LEFT : AlignmentType.JUSTIFIED, spacing: { after: 130, line: 300 } });
 
 const numbering = [{ reference: 'bullets', levels: [{ level: 0, format: LevelFormat.BULLET, text: '\u2022', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 460, hanging: 260 } } } }] }];
 let listCount = 0;
